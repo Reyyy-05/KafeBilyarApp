@@ -1,56 +1,64 @@
 // src/screens/customer/MenuScreen.tsx
 import React, { useState } from 'react';
-import { View, StyleSheet, FlatList, ScrollView, Alert } from 'react-native';
-import { 
-  Searchbar, 
-  Card, 
-  Title, 
-  Paragraph, 
-  Chip, 
-  Button, 
-  Text, 
-  Appbar, 
-  Divider,
-  IconButton  // ✅ Added for quantity controls
-} from 'react-native-paper';
-import { useDispatch, useSelector } from 'react-redux';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Dimensions,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-
-// ✅ SINGLE import cartSlice actions
-import { 
-  addToCart, 
-  decreaseQuantity, 
-  removeFromCart, 
-  clearCart 
-} from '../../store/slices/cartSlice';
-
+import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { RootStackParamList } from '../../navigation/types';
+import { addItem, removeItem, increaseQuantity, decreaseQuantity } from '../../store/slices/cartSlice';
+import { BlurView } from 'expo-blur';
 
-type MenuScreenNavigationProp = StackNavigationProp<RootStackParamList, 'History'>;
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// 🎨 DARK ORANGE DESIGN SYSTEM
+const COLORS = {
+  bg: {
+    primary: '#0F0F0F',
+    secondary: '#1A1A1A',
+    tertiary: '#2D2D2D',
+    elevated: '#353535',
+  },
+  orange: {
+    primary: '#FF6B35',
+    light: '#FF8C61',
+    dark: '#E85A28',
+    glow: 'rgba(255, 107, 53, 0.2)',
+  },
+  text: {
+    primary: '#FFFFFF',
+    secondary: '#B0B0B0',
+    tertiary: '#6B6B6B',
+  },
+};
 
 interface MenuItem {
   id: string;
   name: string;
   description: string;
   price: number;
-  category: string;
+  category: 'drinks' | 'food' | 'dessert';
   image: string;
+  emoji: string;
 }
 
-  const MenuScreen = () => { 
-  const navigation = useNavigation<MenuScreenNavigationProp>();
-  const route = useRoute();
+const MenuScreen = () => {
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const dispatch = useDispatch();
-  
-  const cart = useSelector((state: RootState) => state.cart);
-  
-  // Parameters dari booking flow - TYPE SAFE
-  const params = route.params as RootStackParamList['Menu'];
+  const cartItems = useSelector((state: RootState) => state.cart.items);
+  const cartTotal = useSelector((state: RootState) => state.cart.total);
 
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const bookingData = route.params?.bookingData;
 
   const menuItems: MenuItem[] = [
     {
@@ -59,7 +67,8 @@ interface MenuItem {
       description: 'Kopi espresso premium dengan crema tebal',
       price: 25000,
       category: 'drinks',
-      image: '☕'
+      image: 'coffee',
+      emoji: '☕',
     },
     {
       id: '2',
@@ -67,598 +76,689 @@ interface MenuItem {
       description: 'Espresso dengan steamed milk dan foam',
       price: 30000,
       category: 'drinks',
-      image: '🥛'
+      image: 'coffee',
+      emoji: '☕',
     },
     {
       id: '3',
       name: 'Latte',
-      description: 'Espresso dengan steamed milk yang creamy',
+      description: 'Espresso dengan susu hangat',
       price: 32000,
       category: 'drinks',
-      image: '☕'
+      image: 'coffee',
+      emoji: '🥛',
     },
     {
       id: '4',
-      name: 'Ice Lemon Tea',
-      description: 'Teh lemon es segar',
-      price: 20000,
+      name: 'Iced Tea',
+      description: 'Teh dingin segar dengan lemon',
+      price: 15000,
       category: 'drinks',
-      image: '🍹'
+      image: 'tea',
+      emoji: '🍹',
     },
     {
       id: '5',
-      name: 'French Fries',
-      description: 'Kentang goreng renyah dengan seasoning special',
-      price: 35000,
-      category: 'food',
-      image: '🍟'
+      name: 'Orange Juice',
+      description: 'Jus jeruk segar tanpa gula',
+      price: 20000,
+      category: 'drinks',
+      image: 'juice',
+      emoji: '🍊',
     },
     {
       id: '6',
-      name: 'Chicken Wings',
-      description: 'Sayap ayam crispy dengan saus special',
-      price: 55000,
+      name: 'Nasi Goreng',
+      description: 'Nasi goreng spesial dengan telur',
+      price: 35000,
       category: 'food',
-      image: '🍗'
+      image: 'food',
+      emoji: '🍛',
     },
     {
       id: '7',
-      name: 'Beef Burger',
-      description: 'Burger dengan daging sapi premium dan sayuran segar',
-      price: 65000,
+      name: 'Mie Goreng',
+      description: 'Mie goreng dengan sayuran',
+      price: 30000,
       category: 'food',
-      image: '🍔'
+      image: 'food',
+      emoji: '🍜',
     },
     {
       id: '8',
-      name: 'Chocolate Cake',
-      description: 'Kue coklat lembut dengan ganache',
-      price: 45000,
-      category: 'dessert',
-      image: '🍰'
+      name: 'Club Sandwich',
+      description: 'Sandwich dengan ayam dan sayuran',
+      price: 40000,
+      category: 'food',
+      image: 'food',
+      emoji: '🥪',
     },
     {
       id: '9',
-      name: 'Ice Cream',
-      description: 'Es krim vanilla dengan topping coklat',
+      name: 'French Fries',
+      description: 'Kentang goreng crispy dengan saus',
       price: 25000,
-      category: 'dessert',
-      image: '🍨'
+      category: 'food',
+      image: 'food',
+      emoji: '🍟',
     },
     {
       id: '10',
-      name: 'Mineral Water',
-      description: 'Air mineral botol 600ml',
-      price: 15000,
-      category: 'drinks',
-      image: '💧'
-    }
+      name: 'Chocolate Cake',
+      description: 'Kue coklat lembut dengan topping',
+      price: 35000,
+      category: 'dessert',
+      image: 'dessert',
+      emoji: '🍰',
+    },
+    {
+      id: '11',
+      name: 'Ice Cream',
+      description: 'Es krim vanilla dengan topping',
+      price: 20000,
+      category: 'dessert',
+      image: 'dessert',
+      emoji: '🍨',
+    },
+    {
+      id: '12',
+      name: 'Brownie',
+      description: 'Brownies coklat hangat',
+      price: 28000,
+      category: 'dessert',
+      image: 'dessert',
+      emoji: '🍫',
+    },
   ];
 
   const categories = [
-    { id: 'all', name: 'Semua Menu' },
-    { id: 'drinks', name: 'Minuman' },
-    { id: 'food', name: 'Makanan' },
-    { id: 'dessert', name: 'Dessert' }
+    { id: 'all', label: 'Semua', icon: 'apps' },
+    { id: 'drinks', label: 'Minuman', icon: 'cafe' },
+    { id: 'food', label: 'Makanan', icon: 'restaurant' },
+    { id: 'dessert', label: 'Dessert', icon: 'ice-cream' },
   ];
 
-  const filteredItems = menuItems.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         item.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+  const filteredMenu = menuItems.filter(item => {
+    const matchCategory = selectedCategory === 'all' || item.category === selectedCategory;
+    const matchSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchCategory && matchSearch;
   });
 
   const handleAddToCart = (item: MenuItem) => {
-    dispatch(addToCart({
-      ...item,
-      quantity: 1
+    dispatch(addItem({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: 1,
+      image: item.emoji,
     }));
   };
+
+  const handleIncreaseQuantity = (itemId: string) => {
+    dispatch(increaseQuantity(itemId));
+  };
+
   const handleDecreaseQuantity = (itemId: string) => {
-  dispatch(decreaseQuantity(itemId));
-};
-
-const handleRemoveItem = (itemId: string) => {
-  dispatch(removeFromCart(itemId));
-};
-
-  const handleContinueToSummary = () => {
-    if (params?.fromBooking && params.tableId && params.duration) {
-      // ✅ PERBAIKAN: Langsung pass properties, bukan summaryData object
-      navigation.navigate('History', {
-        isBookingSummary: true,
-        tableId: params.tableId,
-        tableName: params.tableName,
-        duration: params.duration,
-        bookingDate: params.bookingDate,
-        bookingTime: params.bookingTime,
-        tablePrice: params.tablePrice,
-        totalTablePrice: params.totalTablePrice,
-        cartItems: cart.items,
-        cartTotal: cart.total,
-        grandTotal: calculateGrandTotal()
-      });
-    }
+    dispatch(decreaseQuantity(itemId));
   };
 
-  const handleBack = () => {
-    if (params?.fromBooking) {
-      dispatch(clearCart());
-      navigation.goBack();
-    }
+  const handleRemoveItem = (itemId: string) => {
+    dispatch(removeItem(itemId));
   };
 
-  // Di MenuScreen.tsx - update handleCancelBooking
-const handleCancelBooking = () => {
-  Alert.alert(
-    'Batalkan Pesanan',
-    'Apakah Anda yakin ingin membatalkan pesanan? Item di keranjang akan dihapus.',
-    [
-      { text: 'Lanjutkan Pesanan', style: 'cancel' },
-      { 
-        text: 'Batalkan', 
-        style: 'destructive',
-        onPress: () => {
-          dispatch(clearCart());
-          // ✅ PERBAIKAN: Kembali ke Main tab, bukan Booking screen
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Main' }],
-          });
-        }
-      }
-    ]
-  );
-};
-
-  const getCartQuantity = (itemId: string) => {
-    const item = cart.items.find(item => item.id === itemId);
+  const getItemQuantity = (itemId: string): number => {
+    const item = cartItems.find(i => i.id === itemId);
     return item ? item.quantity : 0;
   };
 
-  const calculateGrandTotal = () => {
-    const tableTotal = params?.totalTablePrice || 0;
-    return tableTotal + cart.total;
+  const handleProceed = () => {
+    if (cartItems.length === 0) {
+      alert('Keranjang masih kosong. Tambahkan menu terlebih dahulu.');
+      return;
+    }
+
+    navigation.navigate('History', {
+      bookingWithMenu: {
+        ...bookingData,
+        menuItems: cartItems,
+        menuTotal: cartTotal,
+        grandTotal: (bookingData?.table?.pricePerHour || 0) * (bookingData?.duration || 0) + cartTotal,
+      }
+    });
   };
 
-  const renderMenuItem = ({ item }: { item: MenuItem }) => (
-  <Card style={styles.menuCard}>
-    <Card.Content>
-      <View style={styles.menuItemHeader}>
-        <Text style={styles.menuEmoji}>{item.image}</Text>
-        <View style={styles.menuItemInfo}>
-          <Title style={styles.menuItemName}>{item.name}</Title>
-          <Paragraph style={styles.menuItemDescription}>
-            {item.description}
-          </Paragraph>
-          <Text style={styles.menuItemPrice}>Rp {item.price.toLocaleString()}</Text>
-        </View>
-      </View>
-    </Card.Content>
-    <Card.Actions>
-      <View style={styles.quantityContainer}>
-        <Text style={[
-          styles.quantityText,
-          getCartQuantity(item.id) > 0 && styles.quantityTextActive
-        ]}>
-          {getCartQuantity(item.id) > 0 
-            ? `${getCartQuantity(item.id)}x di keranjang` 
-            : 'Belum dipesan'
-          }
-        </Text>
-      </View>
-      
-      {/* ✅ NEW: Quantity controls atau Add button */}
-      {getCartQuantity(item.id) > 0 ? (
-        <View style={styles.quantityControls}>
-          <IconButton 
-            icon="minus-circle" 
-            size={24} 
-            iconColor="#FF6B35"
-            onPress={() => handleDecreaseQuantity(item.id)}
-          />
-          <Text style={styles.quantityNumber}>{getCartQuantity(item.id)}</Text>
-          <IconButton 
-            icon="plus-circle" 
-            size={24} 
-            iconColor="#FF6B35"
-            onPress={() => handleAddToCart(item)}
-          />
-          <IconButton 
-            icon="delete" 
-            size={24} 
-            iconColor="#F44336"
-            onPress={() => handleRemoveItem(item.id)}
-          />
-        </View>
-      ) : (
-        <Button 
-          mode="contained" 
-          onPress={() => handleAddToCart(item)}
-          style={styles.addButton}
-          compact
-        >
-          + Tambah
-        </Button>
-      )}
-    </Card.Actions>
-  </Card>
-);
-
-  // Jika dari booking flow, tampilkan layout khusus
-  if (params?.fromBooking) {
-    return (
-      <View style={styles.container}>
-        {/* Custom Header untuk Booking Flow */}
-        <Appbar.Header>
-          <Appbar.BackAction onPress={handleBack} />
-          <Appbar.Content 
-            title={`Pesan untuk ${params.tableName}`}
-            subtitle={`${params.duration} jam • ${params.bookingTime}`}
-          />
-          <Appbar.Action icon="close" onPress={handleCancelBooking} />
-        </Appbar.Header>
-
-        <ScrollView style={styles.scrollViewWithHeader}>
-          {/* Booking Info Banner */}
-          <Card style={styles.bookingInfoCard}>
-            <Card.Content>
-              <View style={styles.bookingInfo}>
-                <View style={styles.bookingDetails}>
-                  <Text style={styles.bookingTitle}>Booking {params.tableName}</Text>
-                  <Text style={styles.bookingSubtitle}>
-                    {params.bookingDate} • {params.bookingTime} • {params.duration} jam
-                  </Text>
-                  <Text style={styles.tablePrice}>
-                    Meja: Rp {(params.tablePrice || 0).toLocaleString()}/jam
-                  </Text>
-                </View>
-                <View style={styles.cartSummary}>
-                  <Text style={styles.cartCount}>{cart.items.length} items</Text>
-                  <Text style={styles.cartTotal}>+ Rp {cart.total.toLocaleString()}</Text>
-                  <Divider style={styles.cartDivider} />
-                  <Text style={styles.grandTotal}>
-                    Total: Rp {calculateGrandTotal().toLocaleString()}
-                  </Text>
-                </View>
-              </View>
-            </Card.Content>
-          </Card>
-
-          {/* Menu Content */}
-          <Card style={styles.menuContent}>
-            <Card.Content>
-              <Title style={styles.sectionTitle}>Pilih Makanan & Minuman</Title>
-              <Text style={styles.sectionSubtitle}>
-                Pesan untuk dinikmati selama booking berlangsung
-              </Text>
-              
-              <Searchbar
-                placeholder="Cari menu..."
-                onChangeText={setSearchQuery}
-                value={searchQuery}
-                style={styles.searchBar}
-              />
-              
-              <View style={styles.categoriesContainer}>
-                {categories.map(category => (
-                  <Chip
-                    key={category.id}
-                    selected={selectedCategory === category.id}
-                    onPress={() => setSelectedCategory(category.id)}
-                    style={styles.chip}
-                    showSelectedOverlay
-                  >
-                    {category.name}
-                  </Chip>
-                ))}
-              </View>
-
-              <FlatList
-                data={filteredItems}
-                renderItem={renderMenuItem}
-                keyExtractor={item => item.id}
-                scrollEnabled={false}
-                contentContainerStyle={styles.menuList}
-                showsVerticalScrollIndicator={false}
-              />
-            </Card.Content>
-          </Card>
-        </ScrollView>
-
-        {/* Footer Button untuk Booking Flow */}
-        <View style={styles.footer}>
-          <View style={styles.footerSummary}>
-            <Text style={styles.footerText}>
-              {cart.items.length} items • Rp {cart.total.toLocaleString()}
-            </Text>
-            <Text style={styles.footerGrandTotal}>
-              Grand Total: Rp {calculateGrandTotal().toLocaleString()}
-            </Text>
-          </View>
-          <Button 
-            mode="contained" 
-            onPress={handleContinueToSummary}
-            style={styles.continueButton}
-            icon="clipboard-check"
-            contentStyle={styles.continueButtonContent}
-            disabled={cart.items.length === 0}
-          >
-            Lanjut ke Ringkasan
-          </Button>
-        </View>
-      </View>
-    );
-  }
-
-  // Default layout untuk tab Menu biasa
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollViewNormal}>
-        <Card style={styles.menuContent}>
-          <Card.Content>
-            <Title style={styles.standaloneTitle}>Menu Kafe</Title>
-            <Text style={styles.standaloneSubtitle}>
-              Pilih makanan dan minuman favorit Anda
-            </Text>
-            
-            <Searchbar
-              placeholder="Cari menu..."
-              onChangeText={setSearchQuery}
-              value={searchQuery}
-              style={styles.searchBar}
-            />
-            
-            <View style={styles.categoriesContainer}>
-              {categories.map(category => (
-                <Chip
-                  key={category.id}
-                  selected={selectedCategory === category.id}
-                  onPress={() => setSelectedCategory(category.id)}
-                  style={styles.chip}
-                  showSelectedOverlay
-                >
-                  {category.name}
-                </Chip>
-              ))}
-            </View>
-
-            <FlatList
-              data={filteredItems}
-              renderItem={renderMenuItem}
-              keyExtractor={item => item.id}
-              scrollEnabled={false}
-              contentContainerStyle={styles.menuList}
-              showsVerticalScrollIndicator={false}
-            />
-          </Card.Content>
-        </Card>
-
-        {/* Cart Summary untuk standalone */}
-        {cart.items.length > 0 && (
-          <Card style={styles.standaloneCartCard}>
-            <Card.Content>
-              <View style={styles.standaloneCart}>
-                <Text style={styles.standaloneCartText}>
-                  {cart.items.length} items di keranjang
-                </Text>
-                <Text style={styles.standaloneCartTotal}>
-                  Rp {cart.total.toLocaleString()}
+      {/* 🌟 HEADER */}
+      <View style={styles.header}>
+        <View style={styles.headerGlow} />
+        {bookingData && (
+          <View style={styles.bookingInfoBanner}>
+            <View style={styles.bookingInfoContent}>
+              <View style={styles.bookingInfoRow}>
+                <Ionicons name="calendar" size={14} color={COLORS.orange.primary} />
+                <Text style={styles.bookingInfoText}>
+                  {bookingData.table?.name} • {bookingData.date} • {bookingData.time}
                 </Text>
               </View>
-            </Card.Content>
-          </Card>
+              <Text style={styles.bookingInfoSubtext}>
+                Durasi: {bookingData.duration} jam
+              </Text>
+            </View>
+          </View>
         )}
+        <View style={styles.headerContent}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color={COLORS.text.primary} />
+          </TouchableOpacity>
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle}>Menu</Text>
+            <Text style={styles.headerSubtitle}>Pilih makanan & minuman</Text>
+          </View>
+          <View style={{ width: 44 }} />
+        </View>
+      </View>
+
+      {/* 🔍 SEARCH BAR */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={20} color={COLORS.text.secondary} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Cari menu..."
+            placeholderTextColor={COLORS.text.tertiary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={20} color={COLORS.text.secondary} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* 🏷️ CATEGORY CHIPS - FIXED SCROLLABLE & COMPACT */}
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categoriesContainer}
+        style={styles.categoriesScrollView}
+      >
+        {categories.map(cat => {
+          const isSelected = selectedCategory === cat.id;
+          return (
+            <TouchableOpacity
+              key={cat.id}
+              style={[
+                styles.categoryChip,
+                isSelected && styles.categoryChipSelected,
+              ]}
+              onPress={() => setSelectedCategory(cat.id)}
+              activeOpacity={0.7}
+            >
+              {isSelected && <View style={styles.categoryChipGlow} />}
+              <Ionicons 
+                name={cat.icon as any} 
+                size={16} 
+                color={isSelected ? COLORS.orange.primary : COLORS.text.secondary} 
+              />
+              <Text style={[
+                styles.categoryText,
+                isSelected && styles.categoryTextSelected
+              ]}>
+                {cat.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
+
+      {/* 🍽️ MENU ITEMS */}
+      <ScrollView 
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.menuList}
+      >
+        {filteredMenu.map((item) => {
+          const quantity = getItemQuantity(item.id);
+          const isInCart = quantity > 0;
+
+          return (
+            <View key={item.id} style={styles.menuCard}>
+              {isInCart && <View style={styles.menuCardGlow} />}
+              
+              <View style={styles.menuCardContent}>
+                <View style={styles.menuIcon}>
+                  <Text style={styles.menuEmoji}>{item.emoji}</Text>
+                </View>
+
+                <View style={styles.menuInfo}>
+                  <Text style={styles.menuName}>{item.name}</Text>
+                  <Text style={styles.menuDescription} numberOfLines={2}>
+                    {item.description}
+                  </Text>
+                  <Text style={styles.menuPrice}>
+                    Rp {item.price.toLocaleString()}
+                  </Text>
+                </View>
+
+                {isInCart ? (
+                  <View style={styles.quantityControls}>
+                    <TouchableOpacity
+                      style={styles.quantityButton}
+                      onPress={() => {
+                        if (quantity === 1) {
+                          handleRemoveItem(item.id);
+                        } else {
+                          handleDecreaseQuantity(item.id);
+                        }
+                      }}
+                    >
+                      <Ionicons 
+                        name={quantity === 1 ? "trash" : "remove"} 
+                        size={18} 
+                        color={COLORS.text.primary} 
+                      />
+                    </TouchableOpacity>
+                    
+                    <Text style={styles.quantityText}>{quantity}</Text>
+                    
+                    <TouchableOpacity
+                      style={[styles.quantityButton, styles.quantityButtonAdd]}
+                      onPress={() => handleIncreaseQuantity(item.id)}
+                    >
+                      <Ionicons name="add" size={18} color="#000" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={() => handleAddToCart(item)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="add" size={20} color="#000" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          );
+        })}
+
+        <View style={{ height: 160 }} />
+      </ScrollView>
+
+      {/* 🛒 CART SUMMARY - GLASSMORPHISM */}
+      {cartItems.length > 0 && (
+        <BlurView intensity={80} tint="dark" style={styles.cartSummaryBlur}>
+          <View style={styles.cartSummaryOverlay} />
+          <View style={styles.cartSummaryContent}>
+            <View style={styles.cartInfo}>
+              <View style={styles.cartBadge}>
+                <Ionicons name="cart" size={18} color={COLORS.orange.primary} />
+                <View style={styles.cartCount}>
+                  <Text style={styles.cartCountText}>{cartItems.length}</Text>
+                </View>
+              </View>
+              <View style={styles.cartTextInfo}>
+                <Text style={styles.cartLabel}>
+                  {cartItems.length} items
+                </Text>
+                <Text style={styles.cartTotal}>
+                  Rp {cartTotal.toLocaleString()}
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.proceedButton}
+              onPress={handleProceed}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.proceedButtonText}>Lanjut</Text>
+              <Ionicons name="arrow-forward" size={18} color="#000" />
+            </TouchableOpacity>
+          </View>
+        </BlurView>
+      )}
     </View>
   );
 };
 
-// Styles tetap sama seperti sebelumnya
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.bg.primary,
   },
-  scrollViewWithHeader: {
+  scrollView: {
     flex: 1,
   },
-  scrollViewNormal: {
-    flex: 1,
-    padding: 16,
+
+  // HEADER
+  header: {
+    backgroundColor: COLORS.bg.secondary,
+    paddingTop: 60,
+    paddingBottom: 16,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  bookingInfoCard: {
-    margin: 16,
-    marginBottom: 8,
-    backgroundColor: '#E3F2FD',
+  headerGlow: {
+    position: 'absolute',
+    top: -80,
+    right: -80,
+    width: 160,
+    height: 160,
+    backgroundColor: COLORS.orange.glow,
+    borderRadius: 80,
+    opacity: 0.3,
   },
-  bookingInfo: {
+  bookingInfoBanner: {
+    backgroundColor: COLORS.bg.tertiary,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderRadius: 12,
+    padding: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.orange.primary,
+  },
+  bookingInfoContent: {},
+  bookingInfoRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  bookingInfoText: {
+    fontSize: 13,
+    color: COLORS.text.primary,
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+  bookingInfoSubtext: {
+    fontSize: 11,
+    color: COLORS.text.secondary,
+    marginLeft: 20,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    paddingHorizontal: 20,
   },
-  bookingDetails: {
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.bg.tertiary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitleContainer: {
     flex: 1,
+    alignItems: 'center',
   },
-  bookingTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  bookingSubtitle: {
-    color: '#666',
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  quantityControls: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 4,
-},
-quantityNumber: {
-  fontSize: 16,
-  fontWeight: 'bold',
-  color: '#333',
-  minWidth: 24,
-  textAlign: 'center',
-},
-  tablePrice: {
-    color: '#2196F3',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  cartSummary: {
-    alignItems: 'flex-end',
-    marginLeft: 16,
-  },
-  cartCount: {
-    fontSize: 14,
-    color: '#666',
-  },
-  cartTotal: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-  },
-  cartDivider: {
-    marginVertical: 4,
-    width: '100%',
-  },
-  grandTotal: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2196F3',
-  },
-  menuContent: {
-    margin: 16,
-    marginTop: 8,
-  },
-  sectionTitle: {
+  headerTitle: {
     fontSize: 20,
-    marginBottom: 4,
+    fontWeight: 'bold',
+    color: COLORS.text.primary,
   },
-  sectionSubtitle: {
-    color: '#666',
-    marginBottom: 16,
+  headerSubtitle: {
+    fontSize: 12,
+    color: COLORS.text.secondary,
+    marginTop: 2,
   },
-  standaloneTitle: {
-    fontSize: 24,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  standaloneSubtitle: {
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 16,
+
+  // SEARCH
+  searchContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   searchBar: {
-    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.bg.secondary,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: COLORS.bg.tertiary,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 14,
+    color: COLORS.text.primary,
+  },
+
+  // CATEGORIES - FIXED SCROLLABLE & COMPACT
+  categoriesScrollView: {
+    maxHeight: 50,
+    flexGrow: 0,
   },
   categoriesContainer: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    marginBottom: 8,
-  },
-  menuList: {
-    paddingBottom: 16,
-  },
-  menuCard: {
-    marginBottom: 12,
-    elevation: 2,
-  },
-  menuItemHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  menuEmoji: {
-    fontSize: 40,
-    marginRight: 16,
-  },
-  menuItemInfo: {
-    flex: 1,
-  },
-  menuItemName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  menuItemDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  menuItemPrice: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2196F3',
-  },
-  quantityContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  quantityText: {
-    color: '#666',
-    fontStyle: 'italic',
-    fontSize: 12,
-  },
-  quantityTextActive: {
-    color: '#4CAF50',
-    fontWeight: 'bold',
-    fontStyle: 'normal',
-  },
-  addButton: {
-    borderRadius: 8,
-  },
-  footer: {
-    padding: 16,
-    backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  footerSummary: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  footerText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  footerGrandTotal: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2196F3',
-  },
-  continueButton: {
-    borderRadius: 8,
-  },
-  continueButtonContent: {
+    paddingHorizontal: 20,
     paddingVertical: 8,
   },
-  standaloneCartCard: {
-    margin: 16,
-    marginTop: 8,
-    backgroundColor: '#F3E5F5',
-  },
-  standaloneCart: {
+  categoryChip: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: COLORS.bg.secondary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: COLORS.bg.tertiary,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  categoryChipSelected: {
+    backgroundColor: COLORS.bg.tertiary,
+    borderColor: COLORS.orange.primary,
+    borderWidth: 2,
+  },
+  categoryChipGlow: {
+    position: 'absolute',
+    top: -15,
+    left: -15,
+    width: 30,
+    height: 30,
+    backgroundColor: COLORS.orange.glow,
+    borderRadius: 15,
+  },
+  categoryText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.text.secondary,
+    marginLeft: 6,
+  },
+  categoryTextSelected: {
+    color: COLORS.orange.primary,
+  },
+
+  // MENU ITEMS
+  menuList: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  menuCard: {
+    backgroundColor: COLORS.bg.secondary,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.bg.tertiary,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  menuCardGlow: {
+    position: 'absolute',
+    top: -30,
+    left: -30,
+    width: 60,
+    height: 60,
+    backgroundColor: COLORS.orange.glow,
+    borderRadius: 30,
+  },
+  menuCardContent: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  standaloneCartText: {
-    fontSize: 14,
-    fontWeight: '500',
+  menuIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: COLORS.bg.elevated,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
   },
-  standaloneCartTotal: {
+  menuEmoji: {
+    fontSize: 32,
+  },
+  menuInfo: {
+    flex: 1,
+  },
+  menuName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#7B1FA2',
+    color: COLORS.text.primary,
+    marginBottom: 4,
+  },
+  menuDescription: {
+    fontSize: 12,
+    color: COLORS.text.secondary,
+    marginBottom: 6,
+  },
+  menuPrice: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: COLORS.orange.primary,
+  },
+
+  // QUANTITY CONTROLS
+  quantityControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.bg.elevated,
+    borderRadius: 20,
+    padding: 4,
+  },
+  quantityButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.bg.tertiary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quantityButtonAdd: {
+    backgroundColor: COLORS.orange.primary,
+  },
+  quantityText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: COLORS.text.primary,
+    marginHorizontal: 14,
+    minWidth: 20,
+    textAlign: 'center',
+  },
+  addButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.orange.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // CART SUMMARY - GLASSMORPHISM
+  cartSummaryBlur: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    overflow: 'hidden',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  cartSummaryOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(26, 26, 26, 0.7)',
+  },
+  cartSummaryContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    paddingBottom: 24,
+  },
+  cartInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  cartBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(53, 53, 53, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  cartCount: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: COLORS.orange.primary,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.bg.secondary,
+  },
+  cartCountText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  cartTextInfo: {},
+  cartLabel: {
+    fontSize: 12,
+    color: COLORS.text.secondary,
+    marginBottom: 2,
+  },
+  cartTotal: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.orange.primary,
+  },
+  proceedButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.orange.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 14,
+    shadowColor: COLORS.orange.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  proceedButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#000',
+    marginRight: 8,
   },
 });
 

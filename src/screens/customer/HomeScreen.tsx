@@ -1,3 +1,4 @@
+// src/screens/customer/HomeScreen.tsx
 import React, { useRef, useState } from 'react';
 import { 
   View, 
@@ -16,17 +17,43 @@ import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+// 🎨 DARK ORANGE DESIGN SYSTEM
+const COLORS = {
+  bg: {
+    primary: '#0F0F0F',
+    secondary: '#1A1A1A',
+    tertiary: '#2D2D2D',
+    elevated: '#353535',
+  },
+  orange: {
+    primary: '#FF6B35',
+    light: '#FF8C61',
+    dark: '#E85A28',
+    glow: 'rgba(255, 107, 53, 0.2)',
+  },
+  text: {
+    primary: '#FFFFFF',
+    secondary: '#B0B0B0',
+    tertiary: '#6B6B6B',
+  },
+  status: {
+    success: '#4CAF50',
+    error: '#F44336',
+    warning: '#FFC107',
+    info: '#2196F3',
+  }
+};
+
 const HomeScreen = () => {
   const navigation = useNavigation();
   const { user } = useSelector((state: RootState) => state.auth);
   const scrollY = useRef(new Animated.Value(0)).current;
   const [refreshing, setRefreshing] = useState(false);
 
-  // Enhanced data dengan real-time status
   const [featuredTables, setFeaturedTables] = useState([
     { 
       id: '1', 
-      name: 'Meja VIP', 
+      name: 'VIP Table', 
       capacity: 6, 
       status: 'available',
       price: 75000,
@@ -35,7 +62,7 @@ const HomeScreen = () => {
     },
     { 
       id: '2', 
-      name: 'Meja Bilyar A', 
+      name: 'Table A', 
       capacity: 4, 
       status: 'available',
       price: 50000,
@@ -44,7 +71,7 @@ const HomeScreen = () => {
     },
     { 
       id: '3', 
-      name: 'Meja Keluarga', 
+      name: 'Family Table', 
       capacity: 8, 
       status: 'occupied',
       price: 100000,
@@ -53,7 +80,7 @@ const HomeScreen = () => {
     },
     { 
       id: '4', 
-      name: 'Meja Tournament', 
+      name: 'Tournament Pro', 
       capacity: 4, 
       status: 'available',
       price: 60000,
@@ -65,39 +92,33 @@ const HomeScreen = () => {
   const quickActions = [
     { 
       icon: 'calendar-outline', 
-      title: 'Booking', 
+      title: 'Book Now', 
       screen: 'Booking',
-      color: '#FF6B35',
-      description: 'Pesan meja'
+      description: 'Reserve table'
     },
     { 
       icon: 'restaurant-outline', 
       title: 'Menu', 
       screen: 'Menu',
-      color: '#4CAF50',
-      description: 'Lihat menu'
+      description: 'View menu'
     },
     { 
       icon: 'time-outline', 
-      title: 'Riwayat', 
+      title: 'History', 
       screen: 'BookingHistory',
-      color: '#2196F3',
-      description: 'Booking history'
+      description: 'Your bookings'
     },
     { 
       icon: 'person-outline', 
-      title: 'Profil', 
+      title: 'Profile', 
       screen: 'Profile',
-      color: '#9C27B0',
-      description: 'Akun saya'
+      description: 'My account'
     },
   ];
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    // Simulate API call to refresh table status
     setTimeout(() => {
-      // Update table status randomly for demo
       const updatedTables = featuredTables.map(table => ({
         ...table,
         status: Math.random() > 0.5 ? 'available' : 'occupied'
@@ -107,17 +128,16 @@ const HomeScreen = () => {
     }, 1500);
   }, []);
 
-  const headerOpacity = scrollY.interpolate({
+  const headerScale = scrollY.interpolate({
     inputRange: [0, 100],
-    outputRange: [1, 0.9],
+    outputRange: [1, 0.95],
     extrapolate: 'clamp',
   });
 
   const handleTablePress = (table: any) => {
     if (table.status === 'available') {
-      navigation.navigate('Booking' as never, { 
-        preSelectedTable: table.id 
-      } as never);
+      navigation.navigate('Booking', { preSelectedTable: table.id 
+      });
     }
   };
 
@@ -136,17 +156,28 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
+      {/* 🌟 HEADER */}
+      <Animated.View style={[styles.header, { transform: [{ scale: headerScale }] }]}>
+        <View style={styles.headerGlow} />
         <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.greeting}>Halo, {user?.name || 'Tamu'}! 👋</Text>
-            <Text style={styles.subtitle}>Mau main bilyar hari ini?</Text>
+          <View style={styles.userInfo}>
+            <View style={styles.avatarContainer}>
+              <View style={styles.avatar}>
+                <Ionicons name="person" size={24} color={COLORS.orange.primary} />
+              </View>
+              <View style={styles.onlineIndicator} />
+            </View>
+            <View style={styles.greetingContainer}>
+              <Text style={styles.greeting}>Welcome back,</Text>
+              <Text style={styles.userName}>{user?.name || 'Guest'} 👋</Text>
+            </View>
           </View>
           <TouchableOpacity 
             style={styles.notificationButton}
             onPress={() => navigation.navigate('Notification' as never)}
+            activeOpacity={0.7}
           >
-            <Ionicons name="notifications-outline" size={24} color="#333" />
+            <Ionicons name="notifications-outline" size={24} color={COLORS.text.primary} />
             <View style={styles.notificationBadge}>
               <Text style={styles.notificationBadgeText}>2</Text>
             </View>
@@ -162,22 +193,44 @@ const HomeScreen = () => {
           { useNativeDriver: false }
         )}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            tintColor={COLORS.orange.primary}
+            colors={[COLORS.orange.primary]}
+          />
         }
       >
-        {/* Quick Actions Grid */}
+        {/* 🎯 QUICK ACTIONS */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Akses Cepat</Text>
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={styles.sectionTitle}>Quick Access</Text>
+              <View style={styles.titleUnderline} />
+            </View>
+          </View>
+          
           <View style={styles.quickActionsGrid}>
             {quickActions.map((action, index) => (
               <TouchableOpacity
                 key={action.screen}
-                style={styles.quickActionCard}
+                style={[
+                  styles.quickActionCard,
+                  index === 0 && styles.quickActionCardPrimary
+                ]}
                 onPress={() => handleQuickAction(action.screen)}
-                activeOpacity={0.7}
+                activeOpacity={0.8}
               >
-                <View style={[styles.actionIcon, { backgroundColor: action.color }]}>
-                  <Ionicons name={action.icon as any} size={24} color="#fff" />
+                {index === 0 && <View style={styles.cardGlow} />}
+                <View style={[
+                  styles.actionIconContainer,
+                  index === 0 ? styles.actionIconPrimary : styles.actionIconSecondary
+                ]}>
+                  <Ionicons 
+                    name={action.icon as any} 
+                    size={24} 
+                    color={index === 0 ? '#000' : COLORS.orange.primary} 
+                  />
                 </View>
                 <Text style={styles.actionTitle}>{action.title}</Text>
                 <Text style={styles.actionDescription}>{action.description}</Text>
@@ -186,19 +239,19 @@ const HomeScreen = () => {
           </View>
         </View>
 
-        {/* Featured Tables */}
+        {/* 🎱 FEATURED TABLES */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View>
-              <Text style={styles.sectionTitle}>Meja Tersedia</Text>
-              <Text style={styles.sectionSubtitle}>Pilih meja favorit Anda</Text>
+              <Text style={styles.sectionTitle}>Available Tables</Text>
+              <View style={styles.titleUnderline} />
             </View>
             <TouchableOpacity 
               style={styles.seeAllButton}
               onPress={() => navigation.navigate('Booking' as never)}
             >
-              <Text style={styles.seeAllText}>Lihat Semua</Text>
-              <Ionicons name="chevron-forward" size={16} color="#FF6B35" />
+              <Text style={styles.seeAllText}>View All</Text>
+              <Ionicons name="arrow-forward" size={16} color={COLORS.orange.primary} />
             </TouchableOpacity>
           </View>
 
@@ -210,120 +263,154 @@ const HomeScreen = () => {
             {featuredTables.map((table) => (
               <TouchableOpacity 
                 key={table.id} 
-                style={[
-                  styles.tableCard,
-                  table.status === 'occupied' && styles.tableCardOccupied
-                ]}
+                style={styles.tableCard}
                 onPress={() => handleTablePress(table)}
-                activeOpacity={0.8}
+                activeOpacity={0.9}
                 disabled={table.status === 'occupied'}
               >
-                <View style={styles.tableHeader}>
-                  <View style={[
-                    styles.tableImage,
-                    table.status === 'occupied' && styles.tableImageOccupied
-                  ]}>
-                    <Ionicons 
-                      name={getTableIcon(table.image) as any} 
-                      size={32} 
-                      color={table.status === 'occupied' ? '#999' : '#FF6B35'} 
-                    />
+                {table.status === 'available' && (
+                  <View style={styles.tableCardGlow} />
+                )}
+                
+                <View style={styles.tableCardInner}>
+                  <View style={styles.tableIconWrapper}>
+                    <View style={[
+                      styles.tableIcon,
+                      table.status === 'occupied' && styles.tableIconOccupied
+                    ]}>
+                      <Ionicons 
+                        name={getTableIcon(table.image) as any} 
+                        size={40} 
+                        color={table.status === 'occupied' ? COLORS.text.tertiary : COLORS.orange.primary} 
+                      />
+                    </View>
+                    
+                    <View style={[
+                      styles.statusBadge,
+                      table.status === 'available' ? styles.availableBadge : styles.occupiedBadge
+                    ]}>
+                      <View style={[
+                        styles.statusDot,
+                        { backgroundColor: table.status === 'available' ? COLORS.status.success : COLORS.status.error }
+                      ]} />
+                      <Text style={styles.statusText}>
+                        {table.status === 'available' ? 'Available' : 'Occupied'}
+                      </Text>
+                    </View>
                   </View>
+
                   <View style={styles.tableInfo}>
                     <Text style={styles.tableName}>{table.name}</Text>
-                    <Text style={styles.tablePrice}>Rp {table.price.toLocaleString()}/jam</Text>
+                    <View style={styles.capacityRow}>
+                      <Ionicons name="people" size={14} color={COLORS.text.secondary} />
+                      <Text style={styles.capacityText}>{table.capacity} people</Text>
+                    </View>
                   </View>
-                </View>
 
-                <View style={styles.tableDetails}>
-                  <View style={styles.capacityBadge}>
-                    <Ionicons name="people" size={12} color="#666" />
-                    <Text style={styles.capacityText}>{table.capacity} orang</Text>
-                  </View>
-                  
-                  <View style={styles.features}>
-                    {table.features.slice(0, 2).map((feature, idx) => (
-                      <Text key={idx} style={styles.featureText}>• {feature}</Text>
+                  <View style={styles.featuresContainer}>
+                    {table.features.map((feature, idx) => (
+                      <View key={idx} style={styles.featurePill}>
+                        <Text style={styles.featureText}>{feature}</Text>
+                      </View>
                     ))}
                   </View>
-                </View>
 
-                <View style={styles.tableFooter}>
-                  <View style={[
-                    styles.statusBadge,
-                    table.status === 'available' ? styles.availableBadge : styles.occupiedBadge
-                  ]}>
-                    <Ionicons 
-                      name={table.status === 'available' ? 'checkmark-circle' : 'close-circle'} 
-                      size={14} 
-                      color={table.status === 'available' ? '#4CAF50' : '#F44336'} 
-                    />
-                    <Text style={styles.statusText}>
-                      {table.status === 'available' ? 'Tersedia' : 'Terisi'}
-                    </Text>
-                  </View>
-                  
-                  {table.status === 'available' && (
-                    <View style={styles.bookNowCta}>
-                      <Text style={styles.bookNowText}>Booking</Text>
-                      <Ionicons name="arrow-forward" size={14} color="#FF6B35" />
+                  <View style={styles.tableFooter}>
+                    <View style={styles.priceContainer}>
+                      <Text style={styles.priceLabel}>Starting from</Text>
+                      <Text style={styles.price}>Rp {table.price.toLocaleString()}</Text>
+                      <Text style={styles.priceUnit}>/hour</Text>
                     </View>
-                  )}
+                    
+                    {table.status === 'available' ? (
+                      <TouchableOpacity style={styles.bookButton}>
+                        <Text style={styles.bookButtonText}>Book</Text>
+                        <Ionicons name="arrow-forward" size={16} color="#000" />
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={styles.occupiedButton}>
+                        <Ionicons name="lock-closed" size={14} color={COLORS.text.tertiary} />
+                        <Text style={styles.occupiedButtonText}>Busy</Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
 
                 {table.status === 'occupied' && (
-                  <View style={styles.occupiedOverlay}>
-                    <Text style={styles.occupiedText}>SEDANG DIPAKAI</Text>
-                  </View>
+                  <View style={styles.occupiedOverlay} />
                 )}
               </TouchableOpacity>
             ))}
           </ScrollView>
         </View>
 
-        {/* Promo Banner dengan animasi */}
+        {/* 🔥 PROMO BANNER */}
         <TouchableOpacity 
           style={styles.promoBanner}
           activeOpacity={0.9}
           onPress={() => navigation.navigate('Promo' as never)}
         >
+          <View style={styles.promoGradient} />
           <View style={styles.promoContent}>
             <View style={styles.promoBadge}>
-              <Text style={styles.promoBadgeText}>PROMO</Text>
+              <Ionicons name="flame" size={12} color="#000" />
+              <Text style={styles.promoBadgeText}>HOT DEAL</Text>
             </View>
-            <Text style={styles.promoTitle}>Diskon 20% Weekday</Text>
-            <Text style={styles.promoSubtitle}>Senin - Jumat • 10:00 - 16:00 WIB</Text>
-            <View style={styles.promoButton}>
-              <Text style={styles.promoButtonText}>Klaim Sekarang</Text>
-              <Ionicons name="gift" size={16} color="#FF6B35" />
+            <Text style={styles.promoTitle}>20% OFF Weekdays</Text>
+            <Text style={styles.promoSubtitle}>Monday - Friday • 10:00 - 16:00</Text>
+            <View style={styles.promoButtonRow}>
+              <View style={styles.promoButton}>
+                <Text style={styles.promoButtonText}>Claim Now</Text>
+                <Ionicons name="arrow-forward" size={14} color="#000" />
+              </View>
+              <View style={styles.promoTimer}>
+                <Ionicons name="time-outline" size={14} color="#000" />
+                <Text style={styles.promoTimerText}>2 days left</Text>
+              </View>
             </View>
           </View>
-          <View style={styles.promoIcon}>
-            <Ionicons name="sparkles" size={80} color="#fff" />
+          <View style={styles.promoIconContainer}>
+            <Ionicons name="ticket" size={80} color="rgba(0,0,0,0.1)" />
           </View>
         </TouchableOpacity>
 
-        {/* Stats Section */}
+        {/* 📊 STATS */}
         <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Statistik Anda</Text>
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={styles.sectionTitle}>Your Statistics</Text>
+              <View style={styles.titleUnderline} />
+            </View>
+          </View>
+          
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
-              <Ionicons name="calendar" size={24} color="#FF6B35" />
+              <View style={styles.statIconContainer}>
+                <Ionicons name="calendar" size={24} color={COLORS.orange.primary} />
+              </View>
               <Text style={styles.statNumber}>12</Text>
-              <Text style={styles.statLabel}>Total Booking</Text>
+              <Text style={styles.statLabel}>Total Bookings</Text>
             </View>
+            
             <View style={styles.statCard}>
-              <Ionicons name="time" size={24} color="#4CAF50" />
-              <Text style={styles.statNumber}>8</Text>
-              <Text style={styles.statLabel}>Jam Bermain</Text>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="time" size={24} color={COLORS.status.success} />
+              </View>
+              <Text style={styles.statNumber}>48</Text>
+              <Text style={styles.statLabel}>Hours Played</Text>
             </View>
+            
             <View style={styles.statCard}>
-              <Ionicons name="star" size={24} color="#FFC107" />
+              <View style={styles.statIconContainer}>
+                <Ionicons name="star" size={24} color={COLORS.status.warning} />
+              </View>
               <Text style={styles.statNumber}>4.8</Text>
-              <Text style={styles.statLabel}>Rating</Text>
+              <Text style={styles.statLabel}>Your Rating</Text>
             </View>
           </View>
         </View>
+
+        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
@@ -332,50 +419,93 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: COLORS.bg.primary,
   },
   scrollView: {
     flex: 1,
   },
+
+  // HEADER
   header: {
-    backgroundColor: '#fff',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    backgroundColor: COLORS.bg.secondary,
     paddingTop: 60,
-    paddingBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  headerGlow: {
+    position: 'absolute',
+    top: -100,
+    right: -100,
+    width: 200,
+    height: 200,
+    backgroundColor: COLORS.orange.glow,
+    borderRadius: 100,
+    opacity: 0.3,
   },
   headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginRight: 12,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.bg.tertiary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.orange.primary,
+  },
+  onlineIndicator: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: COLORS.status.success,
+    borderWidth: 2,
+    borderColor: COLORS.bg.secondary,
+  },
+  greetingContainer: {
+    justifyContent: 'center',
   },
   greeting: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 13,
+    color: COLORS.text.secondary,
+    fontWeight: '500',
   },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 4,
+  userName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.text.primary,
+    marginTop: 2,
   },
   notificationButton: {
-    padding: 12,
-    borderRadius: 20,
-    backgroundColor: '#f8f9fa',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.bg.tertiary,
+    justifyContent: 'center',
+    alignItems: 'center',
     position: 'relative',
   },
   notificationBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: '#FF3B30',
+    top: 6,
+    right: 6,
+    backgroundColor: COLORS.orange.primary,
     width: 18,
     height: 18,
     borderRadius: 9,
@@ -383,192 +513,265 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   notificationBadgeText: {
-    color: '#fff',
+    color: '#000',
     fontSize: 10,
     fontWeight: 'bold',
   },
+
+  // SECTION
   section: {
-    padding: 20,
+    paddingHorizontal: 20,
+    marginTop: 28,
   },
   sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: COLORS.text.primary,
+    marginBottom: 6,
+  },
+  titleUnderline: {
+    width: 40,
+    height: 3,
+    backgroundColor: COLORS.orange.primary,
+    borderRadius: 2,
+  },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.bg.tertiary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  seeAllText: {
+    color: COLORS.orange.primary,
+    fontWeight: '600',
+    marginRight: 4,
+    fontSize: 13,
+  },
+
+  // QUICK ACTIONS
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  quickActionCard: {
+    width: (SCREEN_WIDTH - 52) / 2,
+    backgroundColor: COLORS.bg.secondary,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.bg.tertiary,
+  },
+  quickActionCardPrimary: {
+    backgroundColor: COLORS.bg.tertiary,
+    borderColor: COLORS.orange.primary,
+    borderWidth: 1,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  cardGlow: {
+    position: 'absolute',
+    top: -50,
+    left: -50,
+    width: 100,
+    height: 100,
+    backgroundColor: COLORS.orange.glow,
+    borderRadius: 50,
+  },
+  actionIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  actionIconPrimary: {
+    backgroundColor: COLORS.orange.primary,
+  },
+  actionIconSecondary: {
+    backgroundColor: COLORS.bg.elevated,
+  },
+  actionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.text.primary,
+    marginBottom: 4,
+  },
+  actionDescription: {
+    fontSize: 12,
+    color: COLORS.text.secondary,
+    textAlign: 'center',
+  },
+
+  // TABLE CARDS
+  tablesContainer: {
+    paddingRight: 20,
+  },
+  tableCard: {
+    width: 300,
+    marginRight: 16,
+    position: 'relative',
+  },
+  tableCardGlow: {
+    position: 'absolute',
+    top: -20,
+    left: -20,
+    right: -20,
+    bottom: -20,
+    backgroundColor: COLORS.orange.glow,
+    borderRadius: 30,
+    opacity: 0.3,
+  },
+  tableCardInner: {
+    backgroundColor: COLORS.bg.secondary,
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: COLORS.bg.tertiary,
+  },
+  tableIconWrapper: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 16,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: '#666',
-  },
-  seeAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  seeAllText: {
-    color: '#FF6B35',
-    fontWeight: '600',
-    marginRight: 4,
-  },
-  // Quick Actions Grid
-  quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  quickActionCard: {
-    width: (SCREEN_WIDTH - 60) / 2,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  actionIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  tableIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: COLORS.bg.tertiary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    borderWidth: 2,
+    borderColor: COLORS.orange.primary,
   },
-  actionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+  tableIconOccupied: {
+    borderColor: COLORS.bg.elevated,
+    opacity: 0.5,
   },
-  actionDescription: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-  },
-  // Tables Section
-  tablesContainer: {
-    paddingHorizontal: 4,
-  },
-  tableCard: {
-    width: 280,
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 16,
-    marginRight: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    position: 'relative',
-  },
-  tableCardOccupied: {
-    opacity: 0.7,
-  },
-  tableHeader: {
+  statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
-  tableImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#f8f9fa',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+  availableBadge: {
+    backgroundColor: 'rgba(76, 175, 80, 0.2)',
   },
-  tableImageOccupied: {
-    backgroundColor: '#f0f0f0',
+  occupiedBadge: {
+    backgroundColor: 'rgba(244, 67, 54, 0.2)',
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.text.primary,
   },
   tableInfo: {
-    flex: 1,
-  },
-  tableName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
-  },
-  tablePrice: {
-    fontSize: 14,
-    color: '#FF6B35',
-    fontWeight: '600',
-  },
-  tableDetails: {
     marginBottom: 12,
   },
-  capacityBadge: {
+  tableName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.text.primary,
+    marginBottom: 6,
+  },
+  capacityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-    marginBottom: 8,
   },
   capacityText: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
+    fontSize: 13,
+    color: COLORS.text.secondary,
+    marginLeft: 6,
   },
-  features: {
-    marginLeft: 4,
+  featuresContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 16,
+  },
+  featurePill: {
+    backgroundColor: COLORS.bg.elevated,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    marginRight: 6,
+    marginBottom: 6,
   },
   featureText: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
+    fontSize: 11,
+    color: COLORS.text.secondary,
+    fontWeight: '500',
   },
   tableFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.bg.tertiary,
   },
-  statusBadge: {
+  priceContainer: {
+    flex: 1,
+  },
+  priceLabel: {
+    fontSize: 11,
+    color: COLORS.text.secondary,
+    marginBottom: 2,
+  },
+  price: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.orange.primary,
+  },
+  priceUnit: {
+    fontSize: 12,
+    color: COLORS.text.secondary,
+  },
+  bookButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    backgroundColor: COLORS.orange.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
   },
-  availableBadge: {
-    backgroundColor: '#e8f5e8',
+  bookButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#000',
+    marginRight: 6,
   },
-  occupiedBadge: {
-    backgroundColor: '#ffeaea',
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#333',
-    marginLeft: 4,
-  },
-  bookNowCta: {
+  occupiedButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF0EB',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    backgroundColor: COLORS.bg.elevated,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
   },
-  bookNowText: {
-    fontSize: 12,
-    color: '#FF6B35',
+  occupiedButtonText: {
+    fontSize: 13,
+    color: COLORS.text.tertiary,
+    marginLeft: 6,
     fontWeight: '600',
-    marginRight: 4,
   },
   occupiedOverlay: {
     position: 'absolute',
@@ -576,81 +779,105 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 24,
   },
-  occupiedText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  // Promo Banner
+
+  // PROMO BANNER
   promoBanner: {
-    margin: 20,
-    backgroundColor: '#FF6B35',
-    borderRadius: 20,
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
+    marginHorizontal: 20,
+    marginTop: 28,
+    backgroundColor: COLORS.orange.primary,
+    borderRadius: 24,
+    padding: 24,
+    position: 'relative',
+    overflow: 'hidden',
+    minHeight: 160,
+  },
+  promoGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
   },
   promoContent: {
     flex: 1,
+    zIndex: 1,
   },
   promoBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#000',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
     alignSelf: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   promoBadgeText: {
-    color: '#fff',
-    fontSize: 10,
+    color: COLORS.orange.primary,
+    fontSize: 11,
     fontWeight: 'bold',
+    marginLeft: 4,
   },
   promoTitle: {
-    fontSize: 20,
+    fontSize: 26,
     fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 4,
+    color: '#000',
+    marginBottom: 6,
   },
   promoSubtitle: {
     fontSize: 14,
-    color: '#fff',
-    opacity: 0.9,
-    marginBottom: 12,
+    color: 'rgba(0, 0, 0, 0.7)',
+    marginBottom: 16,
+    fontWeight: '500',
+  },
+  promoButtonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   promoButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    backgroundColor: '#000',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: 20,
-    alignSelf: 'flex-start',
+    marginRight: 12,
   },
   promoButtonText: {
-    color: '#FF6B35',
+    color: COLORS.orange.primary,
+    fontWeight: 'bold',
+    marginRight: 6,
+    fontSize: 13,
+  },
+  promoTimer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  promoTimerText: {
+    color: '#000',
+    fontSize: 12,
     fontWeight: '600',
-    marginRight: 4,
+    marginLeft: 4,
   },
-  promoIcon: {
-    opacity: 0.8,
+  promoIconContainer: {
+    position: 'absolute',
+    right: -20,
+    bottom: -20,
+    opacity: 0.3,
   },
-  // Stats Section
+
+  // STATS
   statsSection: {
-    padding: 20,
-    paddingTop: 0,
+    paddingHorizontal: 20,
+    marginTop: 28,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -658,26 +885,32 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    backgroundColor: COLORS.bg.secondary,
+    borderRadius: 20,
     padding: 16,
     alignItems: 'center',
     marginHorizontal: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: COLORS.bg.tertiary,
+  },
+  statIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.bg.elevated,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
-    marginVertical: 8,
+    color: COLORS.text.primary,
+    marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: COLORS.text.secondary,
     textAlign: 'center',
   },
 });
