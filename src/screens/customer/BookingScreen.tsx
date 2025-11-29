@@ -120,23 +120,28 @@ const BookingScreen = () => {
   ];
 
   const handleBookingOnly = () => {
-    if (!selectedTable) {
-      alert('Silakan pilih meja terlebih dahulu');
-      return;
-    }
+  if (!selectedTable) {
+    alert('Silakan pilih meja terlebih dahulu');
+    return;
+  }
 
-    const bookingData = {
-      table: selectedTable,
-      date: selectedDate.fullDate.toLocaleDateString('id-ID'),
-      time: selectedTime,
-      duration: duration,
-      totalPrice: selectedTable.pricePerHour * duration,
-    };
-
-    navigation.navigate('History', { 
-      newBooking: bookingData 
-    });
+  const bookingData = {
+    id: Date.now().toString(),
+    table: selectedTable,
+    date: selectedDate.fullDate.toLocaleDateString('id-ID'),
+    time: selectedTime,
+    duration: duration,
+    totalPrice: selectedTable.pricePerHour * duration,
+    status: 'pending',
+    bookingCode: `BK${Date.now().toString().slice(-6)}`,
+    createdAt: new Date().toISOString(),
   };
+
+  navigation.navigate('History', { 
+    newBooking: bookingData 
+  });
+};
+
 
 
   const handleBookingWithMenu = () => {

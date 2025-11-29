@@ -1,255 +1,521 @@
-// src/screens/auth/RegisterScreen.tsx - COMPLETE VERSION
+// src/screens/auth/RegisterScreen.tsx
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { TextInput } from 'react-native-paper';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { useNavigation } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
-import { loginSuccess } from '../../store/slices/authSlice';
-import type { AppDispatch } from '../../store';
-
-type RootStackParamList = {
-  Onboarding: undefined;
-  Login: undefined;
-  Register: undefined;
-  Main: undefined;
-};
-
-type RegisterScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Register'>;
+import { login } from '../../store/slices/authSlice';
+import { Colors, Typography, Spacing, BorderRadius } from '../../theme';
 
 const RegisterScreen = () => {
-  const navigation = useNavigation<RegisterScreenNavigationProp>();
-  const dispatch = useDispatch<AppDispatch>();
-  
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const navigation = useNavigation<any>();
+  const dispatch = useDispatch();
+
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+  });
+  const [acceptTerms, setAcceptTerms] = useState(false);
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone: string) => {
+    const phoneRegex = /^[0-9]{10,13}$/;
+    return phoneRegex.test(phone);
+  };
 
   const handleRegister = async () => {
+    // Reset errors
+    setErrors({
+      name: '',
+      email: '',
+      phone: '',
+      password: '',
+      confirmPassword: '',
+    });
+
     // Validation
-    if (!name || !email || !phone || !password || !confirmPassword) {
-      Alert.alert('Error', 'Semua field harus diisi');
+    let hasError = false;
+    const newErrors = {
+      name: '',
+      email: '',
+      phone: '',
+      password: '',
+      confirmPassword: '',
+    };
+
+    if (!formData.name) {
+      newErrors.name = 'Nama harus diisi';
+      hasError = true;
+    } else if (formData.name.length < 3) {
+      newErrors.name = 'Nama minimal 3 karakter';
+      hasError = true;
+    }
+
+    if (!formData.email) {
+      newErrors.email = 'Email harus diisi';
+      hasError = true;
+    } else if (!validateEmail(formData.email)) {
+      newErrors.email = 'Format email tidak valid';
+      hasError = true;
+    }
+
+    if (!formData.phone) {
+      newErrors.phone = 'Nomor HP harus diisi';
+      hasError = true;
+    } else if (!validatePhone(formData.phone)) {
+      newErrors.phone = 'Nomor HP tidak valid (10-13 digit)';
+      hasError = true;
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Password harus diisi';
+      hasError = true;
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password minimal 6 karakter';
+      hasError = true;
+    }
+
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Konfirmasi password harus diisi';
+      hasError = true;
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Password tidak cocok';
+      hasError = true;
+    }
+
+    if (!acceptTerms) {
+      alert('Silakan setujui syarat dan ketentuan');
       return;
     }
 
-    if (!email.includes('@')) {
-      Alert.alert('Error', 'Format email tidak valid');
+    if (hasError) {
+      setErrors(newErrors);
       return;
     }
 
-    if (phone.length < 10) {
-      Alert.alert('Error', 'Nomor telepon minimal 10 digit');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password minimal 6 karakter');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Password dan konfirmasi password tidak cocok');
-      return;
-    }
-
-    setLoading(true);
-    
-    // Simulasi proses register
+    // Mock register
+    setIsLoading(true);
     setTimeout(() => {
-      setLoading(false);
-      
-      // ✅ Auto login setelah register
-      dispatch(loginSuccess({
+      dispatch(login({
         user: {
           id: Date.now().toString(),
-          name: name,
-          email: email,
+          name: formData.name,
+          email: formData.email,
         },
-        token: 'jwt-token-' + Date.now(),
+        token: 'mock-jwt-token-' + Date.now(),
       }));
-
-      console.log('✅ Register success! Auto logged in');
-      Alert.alert('Berhasil!', 'Akun Anda telah dibuat dan Anda sudah login');
-      
-      // Navigation otomatis handled by App.tsx (isAuthenticated changed)
+      setIsLoading(false);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' }],
+      });
     }, 1500);
   };
 
+  const updateFormData = (field: string, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    setErrors({ ...errors, [field]: '' });
+  };
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={() => navigation.goBack()} 
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      {/* BACKGROUND GLOW */}
+      <View style={styles.backgroundGlow} />
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* BACK BUTTON */}
+        <TouchableOpacity
           style={styles.backButton}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Daftar Akun</Text>
-      </View>
-
-      {/* Form Section */}
-      <View style={styles.form}>
-        <TextInput
-          label="Nama Lengkap"
-          value={name}
-          onChangeText={setName}
-          mode="outlined"
-          style={styles.input}
-          left={<TextInput.Icon icon="account" />}
-          placeholder="Masukkan nama lengkap"
-        />
-
-        <TextInput
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          mode="outlined"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          style={styles.input}
-          left={<TextInput.Icon icon="email" />}
-          placeholder="contoh@email.com"
-        />
-        
-        <TextInput
-          label="Nomor Telepon"
-          value={phone}
-          onChangeText={setPhone}
-          mode="outlined"
-          keyboardType="phone-pad"
-          style={styles.input}
-          left={<TextInput.Icon icon="phone" />}
-          placeholder="08xxxxxxxxxx"
-        />
-
-        <TextInput
-          label="Password"
-          value={password}
-          onChangeText={setPassword}
-          mode="outlined"
-          secureTextEntry={!showPassword}
-          style={styles.input}
-          left={<TextInput.Icon icon="lock" />}
-          right={
-            <TextInput.Icon 
-              icon={showPassword ? "eye-off" : "eye"} 
-              onPress={() => setShowPassword(!showPassword)}
-            />
-          }
-          placeholder="Minimal 6 karakter"
-        />
-
-        <TextInput
-          label="Konfirmasi Password"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          mode="outlined"
-          secureTextEntry={!showConfirmPassword}
-          style={styles.input}
-          left={<TextInput.Icon icon="lock-check" />}
-          right={
-            <TextInput.Icon 
-              icon={showConfirmPassword ? "eye-off" : "eye"} 
-              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-            />
-          }
-          placeholder="Ulangi password"
-        />
-
-        {/* Register Button */}
-        <TouchableOpacity 
-          style={[styles.registerButton, loading && styles.registerButtonDisabled]}
-          onPress={handleRegister}
-          disabled={loading}
-        >
-          {loading ? (
-            <Text style={styles.registerButtonText}>Loading...</Text>
-          ) : (
-            <Text style={styles.registerButtonText}>Daftar</Text>
-          )}
+          <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
         </TouchableOpacity>
 
-        {/* Login Link */}
-        <View style={styles.loginContainer}>
-          <Text style={styles.loginText}>Sudah punya akun? </Text>
-          <TouchableOpacity 
-            onPress={() => navigation.navigate('Login')}
+        {/* HEADER */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Sign up to get started</Text>
+        </View>
+
+        {/* FORM */}
+        <View style={styles.form}>
+          {/* NAME INPUT */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Full Name</Text>
+            <View style={[
+              styles.inputWrapper,
+              errors.name ? styles.inputWrapperError : null
+            ]}>
+              <Ionicons name="person-outline" size={20} color={Colors.text.secondary} />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your full name"
+                placeholderTextColor={Colors.text.tertiary}
+                value={formData.name}
+                onChangeText={(text) => updateFormData('name', text)}
+                autoCapitalize="words"
+              />
+            </View>
+            {errors.name ? (
+              <Text style={styles.errorText}>{errors.name}</Text>
+            ) : null}
+          </View>
+
+          {/* EMAIL INPUT */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Email</Text>
+            <View style={[
+              styles.inputWrapper,
+              errors.email ? styles.inputWrapperError : null
+            ]}>
+              <Ionicons name="mail-outline" size={20} color={Colors.text.secondary} />
+              <TextInput
+                style={styles.input}
+                placeholder="your.email@example.com"
+                placeholderTextColor={Colors.text.tertiary}
+                value={formData.email}
+                onChangeText={(text) => updateFormData('email', text)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+            {errors.email ? (
+              <Text style={styles.errorText}>{errors.email}</Text>
+            ) : null}
+          </View>
+
+          {/* PHONE INPUT */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Phone Number</Text>
+            <View style={[
+              styles.inputWrapper,
+              errors.phone ? styles.inputWrapperError : null
+            ]}>
+              <Ionicons name="call-outline" size={20} color={Colors.text.secondary} />
+              <TextInput
+                style={styles.input}
+                placeholder="08123456789"
+                placeholderTextColor={Colors.text.tertiary}
+                value={formData.phone}
+                onChangeText={(text) => updateFormData('phone', text)}
+                keyboardType="phone-pad"
+              />
+            </View>
+            {errors.phone ? (
+              <Text style={styles.errorText}>{errors.phone}</Text>
+            ) : null}
+          </View>
+
+          {/* PASSWORD INPUT */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Password</Text>
+            <View style={[
+              styles.inputWrapper,
+              errors.password ? styles.inputWrapperError : null
+            ]}>
+              <Ionicons name="lock-closed-outline" size={20} color={Colors.text.secondary} />
+              <TextInput
+                style={styles.input}
+                placeholder="Minimal 6 karakter"
+                placeholderTextColor={Colors.text.tertiary}
+                value={formData.password}
+                onChangeText={(text) => updateFormData('password', text)}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                  size={20}
+                  color={Colors.text.secondary}
+                />
+              </TouchableOpacity>
+            </View>
+            {errors.password ? (
+              <Text style={styles.errorText}>{errors.password}</Text>
+            ) : null}
+          </View>
+
+          {/* CONFIRM PASSWORD INPUT */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Confirm Password</Text>
+            <View style={[
+              styles.inputWrapper,
+              errors.confirmPassword ? styles.inputWrapperError : null
+            ]}>
+              <Ionicons name="lock-closed-outline" size={20} color={Colors.text.secondary} />
+              <TextInput
+                style={styles.input}
+                placeholder="Ulangi password"
+                placeholderTextColor={Colors.text.tertiary}
+                value={formData.confirmPassword}
+                onChangeText={(text) => updateFormData('confirmPassword', text)}
+                secureTextEntry={!showConfirmPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
+                  size={20}
+                  color={Colors.text.secondary}
+                />
+              </TouchableOpacity>
+            </View>
+            {errors.confirmPassword ? (
+              <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+            ) : null}
+          </View>
+
+          {/* TERMS CHECKBOX */}
+          <TouchableOpacity
+            style={styles.termsContainer}
+            onPress={() => setAcceptTerms(!acceptTerms)}
+            activeOpacity={0.7}
           >
-            <Text style={styles.loginLink}>Login di sini</Text>
+            <View style={[
+              styles.checkbox,
+              acceptTerms && styles.checkboxChecked
+            ]}>
+              {acceptTerms && (
+                <Ionicons name="checkmark" size={16} color="#000" />
+              )}
+            </View>
+            <Text style={styles.termsText}>
+              I agree to the{' '}
+              <Text style={styles.termsLink}>Terms & Conditions</Text>
+            </Text>
+          </TouchableOpacity>
+
+          {/* REGISTER BUTTON */}
+          <TouchableOpacity
+            style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
+            onPress={handleRegister}
+            disabled={isLoading}
+            activeOpacity={0.8}
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#000" />
+            ) : (
+              <>
+                <Text style={styles.registerButtonText}>Register</Text>
+                <Ionicons name="arrow-forward" size={20} color="#000" />
+              </>
+            )}
+          </TouchableOpacity>
+
+          {/* LOGIN LINK */}
+          <TouchableOpacity
+            style={styles.loginLink}
+            onPress={() => navigation.navigate('Login')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.loginLinkText}>
+              Already have an account? <Text style={styles.loginLinkBold}>Login</Text>
+            </Text>
           </TouchableOpacity>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.bg.primary,
   },
-  content: {
-    flexGrow: 1,
-    padding: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 40,
-    marginTop: 20,
-  },
-  backButton: {
-    padding: 8,
-    marginRight: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  form: {
+  scrollView: {
     flex: 1,
   },
-  input: {
-    marginBottom: 16,
-    backgroundColor: '#fff',
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingBottom: 40,
   },
-  registerButton: {
-    backgroundColor: '#FF6B35',
-    paddingVertical: 16,
-    borderRadius: 12,
+
+  // BACKGROUND
+  backgroundGlow: {
+    position: 'absolute',
+    top: -150,
+    right: -100,
+    width: 300,
+    height: 300,
+    backgroundColor: Colors.orange.glow,
+    borderRadius: 150,
+    opacity: 0.3,
+  },
+
+  // BACK BUTTON
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.bg.secondary,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 60,
+    marginBottom: 20,
+  },
+
+  // HEADER
+  header: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  title: {
+    fontSize: Typography.sizes.display2,
+    fontWeight: Typography.weights.bold,
+    color: Colors.text.primary,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: Typography.sizes.base,
+    color: Colors.text.secondary,
+  },
+
+  // FORM
+  form: {
+    width: '100%',
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.semibold,
+    color: Colors.text.primary,
+    marginBottom: 8,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bg.secondary,
+    borderWidth: 1,
+    borderColor: Colors.bg.tertiary,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  inputWrapperError: {
+    borderColor: Colors.status.error,
+    borderWidth: 2,
+  },
+  input: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: Typography.sizes.base,
+    color: Colors.text.primary,
+  },
+  errorText: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.status.error,
+    marginTop: 6,
+    marginLeft: 4,
+  },
+
+  // TERMS
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: Colors.bg.tertiary,
+    backgroundColor: Colors.bg.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  checkboxChecked: {
+    backgroundColor: Colors.orange.primary,
+    borderColor: Colors.orange.primary,
+  },
+  termsText: {
+    flex: 1,
+    fontSize: Typography.sizes.sm,
+    color: Colors.text.secondary,
+  },
+  termsLink: {
+    color: Colors.orange.primary,
+    fontWeight: Typography.weights.semibold,
+  },
+
+  // REGISTER BUTTON
+  registerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.orange.primary,
+    paddingVertical: 16,
+    borderRadius: BorderRadius.lg,
     marginBottom: 24,
   },
   registerButtonDisabled: {
-    backgroundColor: '#ccc',
+    opacity: 0.6,
   },
   registerButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.bold,
+    color: Colors.text.inverse,
+    marginRight: 8,
   },
-  loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+
+  // LOGIN LINK
+  loginLink: {
     alignItems: 'center',
   },
-  loginText: {
-    color: '#666',
-    fontSize: 14,
+  loginLinkText: {
+    fontSize: Typography.sizes.base,
+    color: Colors.text.secondary,
   },
-  loginLink: {
-    color: '#FF6B35',
-    fontSize: 14,
-    fontWeight: '600',
+  loginLinkBold: {
+    fontWeight: Typography.weights.bold,
+    color: Colors.orange.primary,
   },
 });
 

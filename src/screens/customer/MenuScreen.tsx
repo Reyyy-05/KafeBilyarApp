@@ -211,21 +211,46 @@ const MenuScreen = () => {
     return item ? item.quantity : 0;
   };
 
-  const handleProceed = () => {
-    if (cartItems.length === 0) {
-      alert('Keranjang masih kosong. Tambahkan menu terlebih dahulu.');
-      return;
-    }
+ const handleProceed = () => {
+  if (cartItems.length === 0) {
+    alert('Keranjang masih kosong. Tambahkan menu terlebih dahulu.');
+    return;
+  }
 
+  // Check if from booking flow or standalone menu order
+  if (bookingData && bookingData.table) {
+    // FROM BOOKING FLOW - with table
     navigation.navigate('History', {
-      bookingWithMenu: {
-        ...bookingData,
+      bookingWithMenu: {  // ✅ MUST BE "bookingWithMenu"
+        id: Date.now().toString(),
+        table: bookingData.table,
+        date: bookingData.date,
+        time: bookingData.time,
+        duration: bookingData.duration,
+        totalPrice: bookingData.table.pricePerHour * bookingData.duration,
+        status: 'pending',
         menuItems: cartItems,
         menuTotal: cartTotal,
-        grandTotal: (bookingData?.table?.pricePerHour || 0) * (bookingData?.duration || 0) + cartTotal,
+        grandTotal: (bookingData.table.pricePerHour * bookingData.duration) + cartTotal,
+        bookingCode: `BK${Date.now().toString().slice(-6)}`,
+        createdAt: new Date().toISOString(),
       }
     });
-  };
+  } else {
+    // STANDALONE MENU ORDER - no table
+    navigation.navigate('History', {
+      menuOnlyOrder: {  // ✅ MUST BE "menuOnlyOrder"
+        orderDate: new Date().toLocaleDateString('id-ID'),
+        orderTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+        menuItems: cartItems,
+        menuTotal: cartTotal,
+        grandTotal: cartTotal,
+      }
+    });
+  }
+};
+
+
 
   return (
     <View style={styles.container}>

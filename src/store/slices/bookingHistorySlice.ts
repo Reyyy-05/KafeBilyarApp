@@ -1,32 +1,28 @@
 // src/store/slices/bookingHistorySlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-interface CartItem {
+export interface Booking {
   id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
-
-interface BookingHistoryItem {
-  id: string;
-  tableId: string;
-  tableName: string;
-  bookingDate: string;
-  bookingTime: string;
+  table: {
+    id: string;
+    name: string;
+    capacity: number;
+    pricePerHour: number;
+  };
+  date: string;
+  time: string;
   duration: number;
-  tablePrice: number;
-  totalTablePrice: number;
-  menuItems: CartItem[];
-  menuTotal: number;
-  grandTotal: number;
-  status: 'upcoming' | 'completed' | 'cancelled';
+  totalPrice: number;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  menuItems?: any[];
+  menuTotal?: number;
+  grandTotal?: number;
+  bookingCode?: string;
   createdAt: string;
 }
 
 interface BookingHistoryState {
-  bookings: BookingHistoryItem[];
+  bookings: Booking[];
 }
 
 const initialState: BookingHistoryState = {
@@ -37,28 +33,19 @@ const bookingHistorySlice = createSlice({
   name: 'bookingHistory',
   initialState,
   reducers: {
-    addBooking: (state, action: PayloadAction<Omit<BookingHistoryItem, 'id' | 'createdAt' | 'status'>>) => {
-      const newBooking: BookingHistoryItem = {
-        ...action.payload,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
-        status: 'upcoming',
-      };
-      state.bookings.unshift(newBooking); // Add to beginning
+    addBooking: (state, action: PayloadAction<Booking>) => {
+      state.bookings.unshift(action.payload); // Add to beginning
     },
     
-    updateBookingStatus: (state, action: PayloadAction<{ id: string; status: 'upcoming' | 'completed' | 'cancelled' }>) => {
+    updateBookingStatus: (state, action: PayloadAction<{ id: string; status: Booking['status'] }>) => {
       const booking = state.bookings.find(b => b.id === action.payload.id);
       if (booking) {
         booking.status = action.payload.status;
       }
     },
     
-    cancelBooking: (state, action: PayloadAction<string>) => {
-      const booking = state.bookings.find(b => b.id === action.payload);
-      if (booking) {
-        booking.status = 'cancelled';
-      }
+    removeBooking: (state, action: PayloadAction<string>) => {
+      state.bookings = state.bookings.filter(b => b.id !== action.payload);
     },
     
     clearHistory: (state) => {
@@ -67,11 +54,11 @@ const bookingHistorySlice = createSlice({
   },
 });
 
-export const { 
-  addBooking, 
-  updateBookingStatus, 
-  cancelBooking, 
-  clearHistory 
+export const {
+  addBooking,
+  updateBookingStatus,
+  removeBooking,
+  clearHistory,
 } = bookingHistorySlice.actions;
 
 export default bookingHistorySlice.reducer;

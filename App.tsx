@@ -66,7 +66,8 @@ function AppContent() {
         <Stack.Screen name="Notification" component={NotificationScreen} />
         {/* ✅ Allow access to Admin Login from customer side */}
         <Stack.Screen name="AdminLogin" component={AdminLoginScreen} />
-        <Stack.Screen name="FaceVerification" component={FaceVerificationScreen} />
+        
+        
       </Stack.Navigator>
     );
   }
@@ -79,7 +80,7 @@ function AppContent() {
       <Stack.Screen name="Register" component={RegisterScreen} />
       {/* ✅ Allow admin login from auth flow */}
       <Stack.Screen name="AdminLogin" component={AdminLoginScreen} />
-      <Stack.Screen name="FaceVerification" component={FaceVerificationScreen} />
+      
     </Stack.Navigator>
   );
 }

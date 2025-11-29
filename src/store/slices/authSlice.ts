@@ -1,6 +1,5 @@
-// src/store/slices/authSlice.ts - FIXED VERSION
+// src/store/slices/authSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { PURGE } from 'redux-persist'; // ✅ ADD THIS
 
 interface User {
   id: string;
@@ -9,35 +8,30 @@ interface User {
 }
 
 interface AuthState {
+  isAuthenticated: boolean;
   user: User | null;
   token: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
 }
 
 const initialState: AuthState = {
+  isAuthenticated: false,
   user: null,
   token: null,
-  isAuthenticated: false,
-  isLoading: false,
 };
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setLoading: (state, action: PayloadAction<boolean>) => {
-      state.isLoading = action.payload;
-    },
-    loginSuccess: (state, action: PayloadAction<{ user: User; token: string }>) => {
+    login: (state, action: PayloadAction<{ user: User; token: string }>) => {
+      state.isAuthenticated = true;
       state.user = action.payload.user;
       state.token = action.payload.token;
-      state.isAuthenticated = true;
-      state.isLoading = false;
     },
     logout: (state) => {
-      // ✅ RESET TO INITIAL STATE
-      return initialState;
+      state.isAuthenticated = false;
+      state.user = null;
+      state.token = null;
     },
     updateUser: (state, action: PayloadAction<Partial<User>>) => {
       if (state.user) {
@@ -45,13 +39,7 @@ const authSlice = createSlice({
       }
     },
   },
-  extraReducers: (builder) => {
-    // ✅ HANDLE PURGE ACTION
-    builder.addCase(PURGE, (state) => {
-      return initialState;
-    });
-  },
 });
 
-export const { setLoading, loginSuccess, logout, updateUser } = authSlice.actions;
+export const { login, logout, updateUser } = authSlice.actions;
 export default authSlice.reducer;

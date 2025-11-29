@@ -1,175 +1,401 @@
-// src/screens/admin/AdminDashboardScreen.tsx - ADD LOGOUT
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
-import { useSelector, useDispatch } from 'react-redux';
+// src/screens/admin/AdminDashboardScreen.tsx - FIXED VERSION
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Card, Title } from 'react-native-paper';
-import type { RootState } from '../../store';
+import { useNavigation } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../../store';
 import { adminLogout } from '../../store/slices/adminAuthSlice';
-import { persistor } from '../../store'; // ✅ ADD
+import { Colors, Typography, BorderRadius } from '../../theme';
 
 const AdminDashboardScreen = () => {
+  const navigation = useNavigation<any>();
   const dispatch = useDispatch();
-  const { admin } = useSelector((state: RootState) => state.adminAuth);
-  const attendance = useSelector((state: RootState) => state.attendance);
+  const admin = useSelector((state: RootState) => state.adminAuth.admin);
+  
+  const [refreshing, setRefreshing] = useState(false);
 
-  // ✅ ADD LOGOUT HANDLER
-  const handleLogout = async () => {
-    if (Platform.OS === 'web') {
-      const confirmed = window.confirm('Apakah Anda yakin ingin logout?');
-      
-      if (confirmed) {
-        dispatch(adminLogout());
-        await persistor.purge();
-        window.location.href = '/';
-      }
-    }
+  // Mock stats data
+  const stats = {
+    todayBookings: 12,
+    todayRevenue: 2450000,
+    activeTables: 5,
+    totalTables: 8,
+    pendingOrders: 8,
+    completedToday: 15,
   };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 1500);
+  };
+
+  const handleLogout = () => {
+    dispatch(adminLogout());
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Onboarding' }],
+    });
+  };
+
+  const quickActions = [
+    { id: 1, icon: 'calendar', label: 'Bookings', color: Colors.orange.primary, screen: 'BookingManagement' },
+    { id: 2, icon: 'cafe', label: 'Tables', color: Colors.status.info, screen: 'TableManagement' },
+    { id: 3, icon: 'restaurant', label: 'Menu', color: Colors.status.success, screen: 'MenuManagement' },
+    { id: 4, icon: 'bar-chart', label: 'Reports', color: Colors.status.warning, screen: 'Reports' },
+    { id: 5, icon: 'time', label: 'Attendance', color: Colors.status.error, screen: 'Attendance' },
+    { id: 6, icon: 'settings', label: 'Settings', color: Colors.text.secondary, screen: 'SystemSettings' }, // ✅ FIXED
+  ];
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* HEADER */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Halo, {admin?.name}! 👋</Text>
-          <Text style={styles.role}>
-            {admin?.role === 'super_admin' ? 'Super Admin' : 
-             admin?.role === 'admin' ? 'Admin' : 'Kasir'}
-          </Text>
+        <View style={styles.headerGlow} />
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.greeting}>Welcome back,</Text>
+            <Text style={styles.adminName}>{admin?.name || 'Admin'} 👨‍💼</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="log-out-outline" size={24} color={Colors.status.error} />
+          </TouchableOpacity>
         </View>
-        {/* ✅ FIX: Make it clickable */}
-        <TouchableOpacity onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={28} color="#FF6B35" />
-        </TouchableOpacity>
+        <View style={styles.headerBadge}>
+          <Ionicons name="shield-checkmark" size={16} color={Colors.orange.primary} />
+          <Text style={styles.headerRole}>{admin?.role === 'super_admin' ? 'Super Admin' : 'Admin'}</Text>
+        </View>
       </View>
 
-      <ScrollView style={styles.content}>
-        {/* Attendance Card */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <Title>✅ Absensi Hari Ini</Title>
-            {attendance.currentSession ? (
-              <View>
-                <Text style={styles.infoText}>
-                  Check-in: {new Date(attendance.currentSession.checkInTime).toLocaleTimeString('id-ID')}
-                </Text>
-                <Text style={styles.successText}>Status: Aktif</Text>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.orange.primary}
+          />
+        }
+      >
+        {/* STATS GRID */}
+        <View style={styles.statsContainer}>
+          <Text style={styles.sectionTitle}>Today's Overview</Text>
+          
+          <View style={styles.statsGrid}>
+            {/* Stat Card 1 */}
+            <View style={[styles.statCard, styles.statCardPrimary]}>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="calendar" size={24} color={Colors.orange.primary} />
               </View>
-            ) : (
-              <Text style={styles.warningText}>Belum check-in</Text>
-            )}
-          </Card.Content>
-        </Card>
+              <Text style={styles.statValue}>{stats.todayBookings}</Text>
+              <Text style={styles.statLabel}>Bookings Today</Text>
+            </View>
 
-        {/* Stats Cards */}
-        <View style={styles.statsGrid}>
-          <Card style={styles.statCard}>
-            <Card.Content>
-              <Ionicons name="calendar" size={32} color="#FF6B35" />
-              <Text style={styles.statNumber}>12</Text>
-              <Text style={styles.statLabel}>Booking Hari Ini</Text>
-            </Card.Content>
-          </Card>
+            {/* Stat Card 2 */}
+            <View style={[styles.statCard, styles.statCardSuccess]}>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="cash" size={24} color={Colors.status.success} />
+              </View>
+              <Text style={styles.statValue}>
+                {(stats.todayRevenue / 1000).toFixed(0)}K
+              </Text>
+              <Text style={styles.statLabel}>Revenue Today</Text>
+            </View>
 
-          <Card style={styles.statCard}>
-            <Card.Content>
-              <Ionicons name="checkmark-circle" size={32} color="#4CAF50" />
-              <Text style={styles.statNumber}>8</Text>
-              <Text style={styles.statLabel}>Meja Tersedia</Text>
-            </Card.Content>
-          </Card>
+            {/* Stat Card 3 */}
+            <View style={[styles.statCard, styles.statCardInfo]}>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="cafe" size={24} color={Colors.status.info} />
+              </View>
+              <Text style={styles.statValue}>{stats.activeTables}/{stats.totalTables}</Text>
+              <Text style={styles.statLabel}>Active Tables</Text>
+            </View>
+
+            {/* Stat Card 4 */}
+            <View style={[styles.statCard, styles.statCardWarning]}>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="time" size={24} color={Colors.status.warning} />
+              </View>
+              <Text style={styles.statValue}>{stats.pendingOrders}</Text>
+              <Text style={styles.statLabel}>Pending Orders</Text>
+            </View>
+          </View>
         </View>
 
-        {/* Quick Actions */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <Title>Menu Admin</Title>
-            <Text style={styles.comingSoon}>
-              🚧 Fitur admin lainnya sedang dalam pengembangan:
-              {'\n'}• Manajemen Meja
-              {'\n'}• Manajemen Booking
-              {'\n'}• Manajemen Menu
-              {'\n'}• Laporan & Statistik
-            </Text>
-          </Card.Content>
-        </Card>
+        {/* QUICK ACTIONS */}
+        <View style={styles.quickActionsContainer}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          
+          <View style={styles.actionsGrid}>
+            {quickActions.map(action => (
+              <TouchableOpacity
+                key={action.id}
+                style={styles.actionCard}
+                onPress={() => {
+                  console.log('Navigating to:', action.screen); // ✅ ADD DEBUG
+                  navigation.navigate(action.screen);
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.actionIcon, { backgroundColor: `${action.color}20` }]}>
+                  <Ionicons name={action.icon as any} size={28} color={action.color} />
+                </View>
+                <Text style={styles.actionLabel}>{action.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* RECENT ACTIVITY */}
+        <View style={styles.activityContainer}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recent Activity</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAllText}>See All</Text>
+            </TouchableOpacity>
+          </View>
+
+          {[1, 2, 3, 4].map(i => (
+            <View key={i} style={styles.activityItem}>
+              <View style={styles.activityIcon}>
+                <Ionicons name="checkmark-circle" size={20} color={Colors.status.success} />
+              </View>
+              <View style={styles.activityContent}>
+                <Text style={styles.activityTitle}>Booking #BK00{123 + i} confirmed</Text>
+                <Text style={styles.activityTime}>{i * 5} minutes ago</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
 };
 
-// Styles sama seperti sebelumnya
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: Colors.bg.primary,
   },
+  scrollView: {
+    flex: 1,
+  },
+
+  // HEADER - ✅ FIXED WITH ZINDEX
   header: {
-    backgroundColor: '#fff',
-    padding: 20,
+    backgroundColor: Colors.bg.secondary,
     paddingTop: 60,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    position: 'relative',
+    overflow: 'hidden',
+    zIndex: 1,
+  },
+  headerGlow: {
+    position: 'absolute',
+    top: -80,
+    right: -80,
+    width: 160,
+    height: 160,
+    backgroundColor: Colors.orange.glow,
+    borderRadius: 80,
+    opacity: 0.3,
+    zIndex: -1,
+  },
+  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    marginBottom: 12,
+    zIndex: 10,
   },
   greeting: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: Typography.sizes.sm,
+    color: Colors.text.secondary,
+    marginBottom: 4,
   },
-  role: {
-    fontSize: 14,
-    color: '#FF6B35',
-    fontWeight: '600',
-    marginTop: 4,
+  adminName: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    color: Colors.text.primary,
   },
-  content: {
-    flex: 1,
-    padding: 16,
+  logoutButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.bg.elevated,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
   },
-  card: {
+  headerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bg.elevated,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    zIndex: 10,
+  },
+  headerRole: {
+    fontSize: Typography.sizes.xs,
+    fontWeight: Typography.weights.semibold,
+    color: Colors.orange.primary,
+    marginLeft: 6,
+  },
+
+  // STATS
+  statsContainer: {
+    padding: 20,
+  },
+  sectionTitle: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.bold,
+    color: Colors.text.primary,
     marginBottom: 16,
   },
   statsGrid: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 16,
+    flexWrap: 'wrap',
+    marginHorizontal: -6,
   },
   statCard: {
-    flex: 1,
+    width: '48%',
+    backgroundColor: Colors.bg.secondary,
+    borderRadius: BorderRadius.lg,
+    padding: 16,
+    marginHorizontal: '1%',
+    marginBottom: 12,
+    borderWidth: 1,
   },
-  statNumber: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#333',
-    marginVertical: 8,
+  statCardPrimary: {
+    borderColor: Colors.orange.primary,
+    backgroundColor: `${Colors.orange.primary}10`,
   },
-  statLabel: {
-    fontSize: 14,
-    color: '#666',
+  statCardSuccess: {
+    borderColor: Colors.status.success,
+    backgroundColor: `${Colors.status.success}10`,
   },
-  infoText: {
-    fontSize: 14,
-    color: '#666',
+  statCardInfo: {
+    borderColor: Colors.status.info,
+    backgroundColor: `${Colors.status.info}10`,
+  },
+  statCardWarning: {
+    borderColor: Colors.status.warning,
+    backgroundColor: `${Colors.status.warning}10`,
+  },
+  statIconContainer: {
+    marginBottom: 8,
+  },
+  statValue: {
+    fontSize: Typography.sizes.display1,
+    fontWeight: Typography.weights.bold,
+    color: Colors.text.primary,
     marginBottom: 4,
   },
-  successText: {
-    fontSize: 14,
-    color: '#4CAF50',
-    fontWeight: 'bold',
+  statLabel: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.text.secondary,
   },
-  warningText: {
-    fontSize: 14,
-    color: '#FF9800',
-    fontWeight: 'bold',
+
+  // QUICK ACTIONS
+  quickActionsContainer: {
+    padding: 20,
+    paddingTop: 0,
   },
-  comingSoon: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 22,
-    marginTop: 12,
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -6,
+  },
+  actionCard: {
+    width: '31%',
+    backgroundColor: Colors.bg.secondary,
+    borderRadius: BorderRadius.lg,
+    padding: 16,
+    marginHorizontal: '1%',
+    marginBottom: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.bg.tertiary,
+  },
+  actionIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  actionLabel: {
+    fontSize: Typography.sizes.xs,
+    fontWeight: Typography.weights.semibold,
+    color: Colors.text.primary,
+    textAlign: 'center',
+  },
+
+  // ACTIVITY
+  activityContainer: {
+    padding: 20,
+    paddingTop: 0,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  seeAllText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.semibold,
+    color: Colors.orange.primary,
+  },
+  activityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bg.secondary,
+    borderRadius: BorderRadius.md,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: Colors.bg.tertiary,
+  },
+  activityIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.bg.elevated,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  activityContent: {
+    flex: 1,
+  },
+  activityTitle: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.semibold,
+    color: Colors.text.primary,
+    marginBottom: 2,
+  },
+  activityTime: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.text.tertiary,
   },
 });
 

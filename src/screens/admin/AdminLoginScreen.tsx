@@ -1,213 +1,268 @@
-// src/screens/admin/AdminLoginScreen.tsx - WEB COMPATIBLE
+// src/screens/admin/AdminLoginScreen.tsx - FIXED (NO OTP)
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
   KeyboardAvoidingView,
-  Platform 
+  Platform,
+  ScrollView,
+  ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { TextInput, Button } from 'react-native-paper';
+import { useNavigation } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
-import { adminLoginPending } from '../../store/slices/adminAuthSlice';
-import type { AppDispatch } from '../../store';
+import { adminLogin } from '../../store/slices/adminAuthSlice';
+import { Colors, Typography, Spacing, BorderRadius } from '../../theme';
 
 const AdminLoginScreen = () => {
-  const navigation = useNavigation();
-  const dispatch = useDispatch<AppDispatch>();
-  
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const navigation = useNavigation<any>();
+  const dispatch = useDispatch();
+
+  const [step, setStep] = useState<'username' | 'password'>('username');
+  const [formData, setFormData] = useState({
+    username: '',
+    password: '',
+  });
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({
+    username: '',
+    password: '',
+  });
 
-  // Mock admin database
-  const MOCK_ADMINS = [
-    {
-      id: '1',
-      username: 'admin',
-      password: 'admin123',
-      role: 'admin' as const,
-      name: 'Admin Utama',
-      faceData: 'mock-face-data-1',
-    },
-    {
-      id: '2',
-      username: 'kasir1',
-      password: 'kasir123',
-      role: 'kasir' as const,
-      name: 'Kasir 1',
-      faceData: 'mock-face-data-2',
-    },
-    {
-      id: '3',
-      username: 'superadmin',
-      password: 'super123',
-      role: 'super_admin' as const,
-      name: 'Super Admin',
-      faceData: 'mock-face-data-3',
-    },
-  ];
+  const handleNextStep = () => {
+    setErrors({ username: '', password: '' });
 
-  const handleLogin = async () => {
-    // Validation
-    if (!username || !password) {
-      if (Platform.OS === 'web') {
-        window.alert('Username dan password harus diisi');
+    if (step === 'username') {
+      // Validate username
+      if (!formData.username) {
+        setErrors({ ...errors, username: 'Username harus diisi' });
+        return;
       }
-      return;
-    }
-
-    setLoading(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      const admin = MOCK_ADMINS.find(
-        a => a.username === username && a.password === password
-      );
-
-      setLoading(false);
-
-      if (!admin) {
-        if (Platform.OS === 'web') {
-          window.alert('Login Gagal\n\nUsername atau password salah');
-        }
+      if (formData.username.length < 3) {
+        setErrors({ ...errors, username: 'Username minimal 3 karakter' });
+        return;
+      }
+      setStep('password');
+    } else if (step === 'password') {
+      // Validate password & proceed to face verification
+      if (!formData.password) {
+        setErrors({ ...errors, password: 'Password harus diisi' });
+        return;
+      }
+      if (formData.password.length < 6) {
+        setErrors({ ...errors, password: 'Password minimal 6 karakter' });
         return;
       }
 
-      // ✅ Credentials valid
-      console.log('✅ Credentials validated for:', admin.name);
-
-      dispatch(adminLoginPending({
-        username: admin.username,
-        tempToken: 'temp-token-' + Date.now(),
-      }));
-
-      // ✅ WEB: Use window.confirm
-      if (Platform.OS === 'web') {
-        const proceed = window.confirm(
-          `Login Berhasil!\n\nSelamat datang, ${admin.name}!\n\nSilakan verifikasi wajah Anda untuk absensi.\n\nKlik OK untuk lanjut ke Verifikasi Wajah.`
-        );
-        
-        if (proceed) {
-          // @ts-ignore
-          navigation.navigate('FaceVerification', {
-            adminData: admin,
-          });
-        }
-      } else {
-        // Mobile: Use Alert
-        const { Alert } = require('react-native');
-        Alert.alert(
-          'Login Berhasil',
-          `Selamat datang, ${admin.name}!\n\nSilakan verifikasi wajah Anda untuk absensi.`,
-          [
-            {
-              text: 'Lanjut ke Verifikasi Wajah',
-              onPress: () => {
-                // @ts-ignore
-                navigation.navigate('FaceVerification', {
-                  adminData: admin,
-                });
-              },
-            },
-          ]
-        );
-      }
-    }, 1500);
+      // Mock login - then go to face verification
+      setIsLoading(true);
+      setTimeout(() => {
+        dispatch(adminLogin({
+          admin: {
+            id: '1',
+            name: 'Admin User',
+            username: formData.username,
+            role: 'admin',
+          },
+          token: 'mock-admin-jwt-token-' + Date.now(),
+          needsFaceVerification: true,
+        }));
+        setIsLoading(false);
+        // Navigate to Face Verification
+        navigation.navigate('FaceVerification');
+      }, 1500);
+    }
   };
 
+  const handleBack = () => {
+    if (step === 'password') {
+      setStep('username');
+    } else {
+      navigation.goBack();
+    }
+  };
+
+  const getStepInfo = () => {
+    switch (step) {
+      case 'username':
+        return {
+          title: 'Admin Login',
+          subtitle: 'Step 1 of 2: Enter Username',
+          progress: 50,
+        };
+      case 'password':
+        return {
+          title: 'Admin Login',
+          subtitle: 'Step 2 of 2: Enter Password',
+          progress: 100,
+        };
+    }
+  };
+
+  const stepInfo = getStepInfo();
+
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView 
+      {/* BACKGROUND GLOW */}
+      <View style={styles.backgroundGlow} />
+      <View style={[styles.backgroundGlow, styles.backgroundGlow2]} />
+
+      <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
+        {/* BACK BUTTON */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={handleBack}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
+        </TouchableOpacity>
+
+        {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Ionicons name="shield-checkmark" size={80} color="#FF6B35" />
+            <View style={styles.logo}>
+              <Ionicons name="shield-checkmark" size={40} color={Colors.orange.primary} />
+            </View>
           </View>
-          <Text style={styles.title}>Admin Login</Text>
-          <Text style={styles.subtitle}>
-            Sistem Manajemen Kafe & Bilyar
-          </Text>
+          <Text style={styles.title}>{stepInfo.title}</Text>
+          <Text style={styles.subtitle}>{stepInfo.subtitle}</Text>
         </View>
 
-        {/* Login Form */}
+        {/* PROGRESS BAR */}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${stepInfo.progress}%` }]} />
+          </View>
+          <Text style={styles.progressText}>{stepInfo.progress}%</Text>
+        </View>
+
+        {/* FORM */}
         <View style={styles.form}>
-          <TextInput
-            label="Username"
-            value={username}
-            onChangeText={setUsername}
-            mode="outlined"
-            autoCapitalize="none"
-            style={styles.input}
-            left={<TextInput.Icon icon="account" />}
-            placeholder="Masukkan username"
-          />
+          {/* STEP 1: USERNAME */}
+          {step === 'username' && (
+            <View style={styles.stepContainer}>
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Username</Text>
+                <View style={[
+                  styles.inputWrapper,
+                  errors.username ? styles.inputWrapperError : null
+                ]}>
+                  <Ionicons name="person-outline" size={20} color={Colors.text.secondary} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter admin username"
+                    placeholderTextColor={Colors.text.tertiary}
+                    value={formData.username}
+                    onChangeText={(text) => {
+                      setFormData({ ...formData, username: text });
+                      setErrors({ ...errors, username: '' });
+                    }}
+                    autoCapitalize="none"
+                    autoFocus
+                  />
+                </View>
+                {errors.username ? (
+                  <Text style={styles.errorText}>{errors.username}</Text>
+                ) : null}
+              </View>
 
-          <TextInput
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            mode="outlined"
-            secureTextEntry={!showPassword}
-            style={styles.input}
-            left={<TextInput.Icon icon="lock" />}
-            right={
-              <TextInput.Icon 
-                icon={showPassword ? "eye-off" : "eye"} 
-                onPress={() => setShowPassword(!showPassword)}
-              />
-            }
-            placeholder="Masukkan password"
-          />
+              <TouchableOpacity
+                style={styles.nextButton}
+                onPress={handleNextStep}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.nextButtonText}>Next</Text>
+                <Ionicons name="arrow-forward" size={20} color="#000" />
+              </TouchableOpacity>
+            </View>
+          )}
 
-          {/* Info Box */}
-          <View style={styles.infoBox}>
-            <Ionicons name="information-circle" size={20} color="#2196F3" />
-            <Text style={styles.infoText}>
-              Setelah login, Anda akan diminta verifikasi wajah untuk absensi
-            </Text>
+          {/* STEP 2: PASSWORD */}
+          {step === 'password' && (
+            <View style={styles.stepContainer}>
+              <View style={styles.infoCard}>
+                <Ionicons name="information-circle" size={24} color={Colors.orange.primary} />
+                <Text style={styles.infoText}>
+                  After password verification, you'll be asked to verify your face for security.
+                </Text>
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Password</Text>
+                <View style={[
+                  styles.inputWrapper,
+                  errors.password ? styles.inputWrapperError : null
+                ]}>
+                  <Ionicons name="lock-closed-outline" size={20} color={Colors.text.secondary} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your password"
+                    placeholderTextColor={Colors.text.tertiary}
+                    value={formData.password}
+                    onChangeText={(text) => {
+                      setFormData({ ...formData, password: text });
+                      setErrors({ ...errors, password: '' });
+                    }}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoFocus
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                      size={20}
+                      color={Colors.text.secondary}
+                    />
+                  </TouchableOpacity>
+                </View>
+                {errors.password ? (
+                  <Text style={styles.errorText}>{errors.password}</Text>
+                ) : null}
+              </View>
+
+              <TouchableOpacity
+                style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+                onPress={handleNextStep}
+                disabled={isLoading}
+                activeOpacity={0.8}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#000" />
+                ) : (
+                  <>
+                    <Text style={styles.loginButtonText}>Continue to Face Verification</Text>
+                    <Ionicons name="scan" size={20} color="#000" />
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* FOOTER INFO */}
+        <View style={styles.footer}>
+          <View style={styles.securityBadge}>
+            <Ionicons name="shield-checkmark" size={16} color={Colors.status.success} />
+            <Text style={styles.securityText}>Secure Admin Access</Text>
           </View>
-
-          {/* Login Button */}
-          <Button
-            mode="contained"
-            onPress={handleLogin}
-            loading={loading}
-            disabled={loading}
-            style={styles.loginButton}
-            contentStyle={styles.loginButtonContent}
-            icon="login"
-          >
-            {loading ? 'Memverifikasi...' : 'Login'}
-          </Button>
-
-          {/* Demo Credentials */}
-          <View style={styles.demoBox}>
-            <Text style={styles.demoTitle}>🔑 Demo Credentials:</Text>
-            <Text style={styles.demoText}>Admin: admin / admin123</Text>
-            <Text style={styles.demoText}>Kasir: kasir1 / kasir123</Text>
-            <Text style={styles.demoText}>Super Admin: superadmin / super123</Text>
-          </View>
-
-          {/* Back to Customer App */}
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={20} color="#666" />
-            <Text style={styles.backText}>Kembali ke Customer App</Text>
-          </TouchableOpacity>
+          <Text style={styles.footerNote}>
+            This is a protected admin area. All login attempts are logged.
+          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -217,96 +272,222 @@ const AdminLoginScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: Colors.bg.primary,
+  },
+  scrollView: {
+    flex: 1,
   },
   scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
   },
+
+  // BACKGROUND
+  backgroundGlow: {
+    position: 'absolute',
+    top: -150,
+    right: -100,
+    width: 300,
+    height: 300,
+    backgroundColor: Colors.orange.glow,
+    borderRadius: 150,
+    opacity: 0.3,
+  },
+  backgroundGlow2: {
+    top: undefined,
+    right: undefined,
+    bottom: -100,
+    left: -150,
+    backgroundColor: Colors.status.success + '30',
+  },
+
+  // BACK BUTTON
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.bg.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 60,
+    marginBottom: 20,
+  },
+
+  // HEADER
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
   },
   logoContainer: {
-    marginBottom: 20,
-    backgroundColor: '#FFF5F0',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    marginBottom: 16,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.bg.secondary,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.orange.primary,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: Typography.sizes.display2,
+    fontWeight: Typography.weights.bold,
+    color: Colors.text.primary,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
+    fontSize: Typography.sizes.base,
+    color: Colors.text.secondary,
   },
+
+  // PROGRESS
+  progressContainer: {
+    marginBottom: 32,
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: Colors.bg.secondary,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: Colors.orange.primary,
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: Typography.sizes.xs,
+    fontWeight: Typography.weights.semibold,
+    color: Colors.orange.primary,
+    textAlign: 'right',
+  },
+
+  // FORM
   form: {
     width: '100%',
   },
-  input: {
-    marginBottom: 16,
-    backgroundColor: '#fff',
+  stepContainer: {
+    width: '100%',
   },
-  infoBox: {
+  inputContainer: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.semibold,
+    color: Colors.text.primary,
+    marginBottom: 8,
+  },
+  inputWrapper: {
     flexDirection: 'row',
-    backgroundColor: '#E3F2FD',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 24,
     alignItems: 'center',
+    backgroundColor: Colors.bg.secondary,
+    borderWidth: 1,
+    borderColor: Colors.bg.tertiary,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  inputWrapperError: {
+    borderColor: Colors.status.error,
+    borderWidth: 2,
+  },
+  input: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: Typography.sizes.base,
+    color: Colors.text.primary,
+  },
+  errorText: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.status.error,
+    marginTop: 6,
+    marginLeft: 4,
+  },
+
+  // INFO CARD
+  infoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bg.secondary,
+    borderRadius: BorderRadius.lg,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: Colors.orange.primary,
   },
   infoText: {
     flex: 1,
-    marginLeft: 8,
-    fontSize: 13,
-    color: '#1976D2',
-    lineHeight: 18,
+    fontSize: Typography.sizes.sm,
+    color: Colors.text.secondary,
+    marginLeft: 12,
+    lineHeight: Typography.sizes.sm * 1.5,
   },
-  loginButton: {
-    borderRadius: 8,
-    marginBottom: 24,
-  },
-  loginButtonContent: {
-    paddingVertical: 8,
-  },
-  demoBox: {
-    backgroundColor: '#FFF3E0',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 24,
-    borderLeftWidth: 4,
-    borderLeftColor: '#FF6B35',
-  },
-  demoTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
-  },
-  demoText: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 4,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-  },
-  backButton: {
+
+  // BUTTONS
+  nextButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 12,
+    backgroundColor: Colors.orange.primary,
+    paddingVertical: 16,
+    borderRadius: BorderRadius.lg,
+    marginTop: 8,
   },
-  backText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#666',
+  nextButtonText: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.bold,
+    color: Colors.text.inverse,
+    marginRight: 8,
+  },
+  loginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.orange.primary,
+    paddingVertical: 16,
+    borderRadius: BorderRadius.lg,
+  },
+  loginButtonDisabled: {
+    opacity: 0.6,
+  },
+  loginButtonText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.bold,
+    color: Colors.text.inverse,
+    marginRight: 8,
+  },
+
+  // FOOTER
+  footer: {
+    marginTop: 40,
+    alignItems: 'center',
+  },
+  securityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bg.secondary,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: Colors.status.success,
+  },
+  securityText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.semibold,
+    color: Colors.status.success,
+    marginLeft: 6,
+  },
+  footerNote: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.text.tertiary,
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
 });
 
