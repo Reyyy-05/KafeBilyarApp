@@ -21,25 +21,13 @@ const ProfileScreen = () => {
   const { user } = useSelector((state: RootState) => state.auth);
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: () => {
-            // ✅ Dispatch Redux logout - navigation auto-handled by AppNavigator
-            dispatch(logout());
-          },
-        },
-      ]
-    );
-  };
+  console.log('🔴 Logout button clicked');
+  console.log('🔴 Dispatching logout...');
+  dispatch(logout());
+  console.log('🔴 Logout dispatched!');
+};
+
+
 
   const menuItems = [
     {

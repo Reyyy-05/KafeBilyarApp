@@ -1,4 +1,4 @@
-// src/navigation/AppNavigator.tsx - WITH AUTH NAVIGATION
+// src/navigation/AppNavigator.tsx
 import React, { useEffect } from 'react';
 import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -27,9 +27,8 @@ import UserManagementScreen from '../screens/admin/UserManagementScreen';
 import AdvancedReportsScreen from '../screens/admin/AdvancedReportsScreen';
 import SystemSettingsScreen from '../screens/admin/SystemSettingsScreen';
 
-// Customer Navigator
+// Customer Navigator & Screens
 import CustomerTabNavigator from './tabs/CustomerTabNavigator';
-// Tambahkan import ini di bagian atas setelah CustomerTabNavigator
 import EditProfileScreen from '../screens/customer/EditProfileScreen';
 import PaymentMethodsScreen from '../screens/customer/PaymentMethodsScreen';
 import FavoritesScreen from '../screens/customer/FavoritesScreen';
@@ -46,15 +45,18 @@ const AppNavigator = () => {
   // ✅ Auto-navigate based on auth state
   useEffect(() => {
     if (navigationRef.isReady()) {
+      console.log('📍 Auth State:', { isCustomerAuth, isAdminAuth });
+      
       if (isCustomerAuth) {
-        console.log('🏠 Navigating to Home (Customer authenticated)');
+        console.log('✅ Navigating to Main');
         navigationRef.navigate('Main' as never);
       } else if (isAdminAuth) {
         const dashboard = admin?.role === 'super_admin' ? 'SuperAdminDashboard' : 'AdminDashboard';
-        console.log(`🏠 Navigating to ${dashboard} (Admin authenticated)`);
+        console.log(`✅ Navigating to ${dashboard}`);
         navigationRef.navigate(dashboard as never);
       } else {
-        console.log('🔓 Not authenticated, staying on auth screens');
+        console.log('❌ Navigating to Onboarding');
+        navigationRef.navigate('Onboarding' as never);
       }
     }
   }, [isCustomerAuth, isAdminAuth, navigationRef, admin]);
@@ -87,7 +89,6 @@ const AppNavigator = () => {
         <Stack.Screen name="AdvancedReports" component={AdvancedReportsScreen} />
         <Stack.Screen name="SystemSettings" component={SystemSettingsScreen} />
         
-       
         {/* ========== CUSTOMER SCREENS ========== */}
         <Stack.Screen name="Main" component={CustomerTabNavigator} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} />
@@ -95,7 +96,6 @@ const AppNavigator = () => {
         <Stack.Screen name="Favorites" component={FavoritesScreen} />
         <Stack.Screen name="Promo" component={PromoScreen} />
         <Stack.Screen name="Notification" component={NotificationScreen} />
-
       </Stack.Navigator>
     </NavigationContainer>
   );
