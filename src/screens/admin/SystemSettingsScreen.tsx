@@ -1,4 +1,4 @@
-// src/screens/admin/SystemSettingsScreen.tsx
+// src/screens/admin/SystemSettingsScreen.tsx - FIXED WITH GUARD
 import React, { useState } from 'react';
 import {
   View,
@@ -12,10 +12,32 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 import { Colors, Typography, BorderRadius } from '../../theme';
 
 const SystemSettingsScreen = () => {
   const navigation = useNavigation<any>();
+  
+  // ✅ GUARD: Check if super admin
+  const admin = useSelector((state: RootState) => state.adminAuth.admin);
+  const isSuperAdmin = admin?.role === 'super_admin';
+
+  React.useEffect(() => {
+    if (!isSuperAdmin) {
+      Alert.alert(
+        'Access Denied',
+        'This feature is only available for Super Admins.',
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
+    }
+  }, [isSuperAdmin, navigation]);
+
+  // Don't render if not super admin
+  if (!isSuperAdmin) {
+    return null;
+  }
+
   const [refreshing, setRefreshing] = useState(false);
 
   // Settings state
@@ -134,7 +156,7 @@ const SystemSettingsScreen = () => {
     <View style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
-        <View style={styles.headerGlow} />
+        <View style={styles.headerGlow} pointerEvents="none" />
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}

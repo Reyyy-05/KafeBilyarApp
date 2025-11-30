@@ -1,4 +1,4 @@
-// src/navigation/drawers/AdminDrawerNavigator.tsx
+// src/navigation/drawers/AdminDrawerNavigator.tsx - FIXED
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useSelector } from 'react-redux';
@@ -34,26 +34,20 @@ const AdminDrawerNavigator = () => {
         <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
       )}
 
-      {/* GROUP 1: ADMIN CORE - Available for all admins */}
+      {/* GROUP 1 & 2: AVAILABLE FOR ALL ADMINS */}
       <Stack.Screen name="BookingManagement" component={BookingManagementScreen} />
       <Stack.Screen name="TableManagement" component={TableManagementScreen} />
       <Stack.Screen name="MenuManagement" component={MenuManagementScreen} />
-
-      {/* GROUP 2: ADMIN EXTENDED - Available for all admins */}
       <Stack.Screen name="Reports" component={ReportsScreen} />
       <Stack.Screen name="Attendance" component={AttendanceScreen} />
 
-      {/* GROUP 3 & 4: SUPER ADMIN ONLY */}
-      {isSuperAdmin && (
-        <>
-          <Stack.Screen name="AdminManagement" component={AdminManagementScreen} />
-          <Stack.Screen name="TableCRUD" component={TableCRUDScreen} />
-          <Stack.Screen name="MenuCRUD" component={MenuCRUDScreen} />
-          <Stack.Screen name="UserManagement" component={UserManagementScreen} />
-          <Stack.Screen name="AdvancedReports" component={AdvancedReportsScreen} />
-          <Stack.Screen name="SystemSettings" component={SystemSettingsScreen} />
-        </>
-      )}
+      {/* GROUP 3 & 4: SUPER ADMIN SCREENS - Always registered, guard inside screen */}
+      <Stack.Screen name="AdminManagement" component={AdminManagementScreen} />
+      <Stack.Screen name="TableCRUD" component={TableCRUDScreen} />
+      <Stack.Screen name="MenuCRUD" component={MenuCRUDScreen} />
+      <Stack.Screen name="UserManagement" component={UserManagementScreen} />
+      <Stack.Screen name="AdvancedReports" component={AdvancedReportsScreen} />
+      <Stack.Screen name="SystemSettings" component={SystemSettingsScreen} />
     </Stack.Navigator>
   );
 };

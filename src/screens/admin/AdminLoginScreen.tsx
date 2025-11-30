@@ -1,4 +1,4 @@
-// src/screens/admin/AdminLoginScreen.tsx - FIXED (NO OTP)
+// src/screens/admin/AdminLoginScreen.tsx - FIXED FULL VERSION
 import React, { useState } from 'react';
 import {
   View,
@@ -10,12 +10,13 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
-import { adminLogin } from '../../store/slices/adminAuthSlice';
-import { Colors, Typography, Spacing, BorderRadius } from '../../theme';
+import { adminLogin, setFaceVerified } from '../../store/slices/adminAuthSlice';
+import { Colors, Typography, BorderRadius } from '../../theme';
 
 const AdminLoginScreen = () => {
   const navigation = useNavigation<any>();
@@ -48,7 +49,7 @@ const AdminLoginScreen = () => {
       }
       setStep('password');
     } else if (step === 'password') {
-      // Validate password & proceed to face verification
+      // Validate password
       if (!formData.password) {
         setErrors({ ...errors, password: 'Password harus diisi' });
         return;
@@ -58,23 +59,41 @@ const AdminLoginScreen = () => {
         return;
       }
 
-      // Mock login - then go to face verification
-      setIsLoading(true);
-      setTimeout(() => {
-        dispatch(adminLogin({
-          admin: {
-            id: '1',
-            name: 'Admin User',
-            username: formData.username,
-            role: 'admin',
-          },
-          token: 'mock-admin-jwt-token-' + Date.now(),
-          needsFaceVerification: true,
-        }));
-        setIsLoading(false);
-        // Navigate to Face Verification
-        navigation.navigate('FaceVerification');
-      }, 1500);
+      // Mock login - skip face verification
+setIsLoading(true);
+setTimeout(() => {
+  const mockAdmin = {
+    id: '1',
+    name: formData.username === 'superadmin' ? 'Super Admin' : 'Admin User',
+    username: formData.username,
+    email: `${formData.username}@kafebilyar.com`,
+    role: (formData.username === 'superadmin' ? 'super_admin' : 'admin') as 'admin' | 'super_admin',
+  };
+
+  console.log('🔐 Attempting login with:', mockAdmin);
+
+  // Dispatch dengan format yang benar
+  dispatch(adminLogin({
+    admin: mockAdmin,
+    token: 'mock-token-' + Date.now(),
+    needsFaceVerification: false,
+  }));
+
+  dispatch(setFaceVerified(true));
+
+  console.log('✅ Redux dispatched');
+
+  setIsLoading(false);
+  
+  // ✅ TAMBAHKAN INI: Manual navigate
+  setTimeout(() => {
+    if (mockAdmin.role === 'super_admin') {
+      navigation.replace('SuperAdminDashboard');
+    } else {
+      navigation.replace('AdminDashboard');
+    }
+  }, 100);
+}, 1000);
     }
   };
 
@@ -111,8 +130,8 @@ const AdminLoginScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       {/* BACKGROUND GLOW */}
-      <View style={styles.backgroundGlow} />
-      <View style={[styles.backgroundGlow, styles.backgroundGlow2]} />
+      <View style={styles.backgroundGlow} pointerEvents="none" />
+      <View style={[styles.backgroundGlow, styles.backgroundGlow2]} pointerEvents="none" />
 
       <ScrollView
         style={styles.scrollView}
@@ -195,7 +214,7 @@ const AdminLoginScreen = () => {
               <View style={styles.infoCard}>
                 <Ionicons name="information-circle" size={24} color={Colors.orange.primary} />
                 <Text style={styles.infoText}>
-                  After password verification, you'll be asked to verify your face for security.
+                  Enter your password to access admin dashboard.
                 </Text>
               </View>
 
@@ -245,8 +264,8 @@ const AdminLoginScreen = () => {
                   <ActivityIndicator size="small" color="#000" />
                 ) : (
                   <>
-                    <Text style={styles.loginButtonText}>Continue to Face Verification</Text>
-                    <Ionicons name="scan" size={20} color="#000" />
+                    <Text style={styles.loginButtonText}>Login to Dashboard</Text>
+                    <Ionicons name="arrow-forward" size={20} color="#000" />
                   </>
                 )}
               </TouchableOpacity>

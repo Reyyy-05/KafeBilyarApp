@@ -10,21 +10,23 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { login } from '../../store/slices/authSlice';
-import { Colors, Typography, Spacing, BorderRadius } from '../../theme';
+import type { AppDispatch, RootState } from '../../store';
+import { Colors, Typography, BorderRadius } from '../../theme';
 
 const LoginScreen = () => {
   const navigation = useNavigation<any>();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading, error } = useSelector((state: RootState) => state.auth);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({ email: '', password: '' });
 
   const validateEmail = (email: string) => {
@@ -33,52 +35,38 @@ const LoginScreen = () => {
   };
 
   const handleLogin = async () => {
-    // Reset errors
-    setErrors({ email: '', password: '' });
+  console.log('🔐 Login attempt:', { email, password });
 
-    // Validation
-    let hasError = false;
-    const newErrors = { email: '', password: '' };
-
+    // Validate
     if (!email) {
-      newErrors.email = 'Email harus diisi';
-      hasError = true;
-    } else if (!validateEmail(email)) {
-      newErrors.email = 'Format email tidak valid';
-      hasError = true;
-    }
-
-    if (!password) {
-      newErrors.password = 'Password harus diisi';
-      hasError = true;
-    } else if (password.length < 6) {
-      newErrors.password = 'Password minimal 6 karakter';
-      hasError = true;
-    }
-
-    if (hasError) {
-      setErrors(newErrors);
+      setErrors({ ...errors, email: 'Email is required' });
       return;
     }
 
-    // Mock login
-    setIsLoading(true);
-    setTimeout(() => {
-      dispatch(login({
-        user: {
-          id: '1',
-          name: 'Test User',
-          email: email,
-        },
-        token: 'mock-jwt-token',
-      }));
-      setIsLoading(false);
-        navigation.reset({
-    index: 0,
-    routes: [{ name: 'Home' }],
-  });
-    }, 1500);
-  };
+    if (!validateEmail(email)) {
+      setErrors({ ...errors, email: 'Invalid email format' });
+      return;
+    }
+
+    if (!password) {
+      setErrors({ ...errors, password: 'Password is required' });
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrors({ ...errors, password: 'Password must be at least 6 characters' });
+      return;
+    }
+
+    try {
+    console.log('📡 Calling API...');
+    const result = await dispatch(login({ email, password })).unwrap();
+    console.log('✅ Login success:', result);
+  } catch (error: any) {
+    console.error('❌ Login error:', error);
+    Alert.alert('Login Failed', error || 'Invalid credentials');
+  }
+};
 
   return (
     <KeyboardAvoidingView
@@ -117,68 +105,67 @@ const LoginScreen = () => {
         {/* FORM */}
         <View style={styles.form}>
           {/* EMAIL INPUT */}
-<View style={styles.inputContainer}>
-  <Text style={styles.label}>Email</Text>
-  <View style={[
-    styles.inputWrapper,
-    errors.email ? styles.inputWrapperError : null
-  ]}>
-    <Ionicons name="mail-outline" size={20} color={Colors.text.secondary} />
-    <TextInput
-      style={styles.input}
-      placeholder="your.email@example.com"
-      placeholderTextColor={Colors.text.tertiary}
-      value={email}
-      onChangeText={(text) => {
-        setEmail(text);
-        setErrors({ ...errors, email: '' });
-      }}
-      keyboardType="email-address"
-      autoCapitalize="none"
-      autoComplete="email"
-    />
-  </View>
-  {errors.email ? (
-    <Text style={styles.errorText}>{errors.email}</Text>
-  ) : null}
-</View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Email</Text>
+            <View style={[
+              styles.inputWrapper,
+              errors.email ? styles.inputWrapperError : null
+            ]}>
+              <Ionicons name="mail-outline" size={20} color={Colors.text.secondary} />
+              <TextInput
+                style={styles.input}
+                placeholder="your.email@example.com"
+                placeholderTextColor={Colors.text.tertiary}
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  setErrors({ ...errors, email: '' });
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+              />
+            </View>
+            {errors.email ? (
+              <Text style={styles.errorText}>{errors.email}</Text>
+            ) : null}
+          </View>
 
-{/* PASSWORD INPUT */}
-<View style={styles.inputContainer}>
-  <Text style={styles.label}>Password</Text>
-  <View style={[
-    styles.inputWrapper,
-    errors.password ? styles.inputWrapperError : null
-  ]}>
-    <Ionicons name="lock-closed-outline" size={20} color={Colors.text.secondary} />
-    <TextInput
-      style={styles.input}
-      placeholder="Enter your password"
-      placeholderTextColor={Colors.text.tertiary}
-      value={password}
-      onChangeText={(text) => {
-        setPassword(text);
-        setErrors({ ...errors, password: '' });
-      }}
-      secureTextEntry={!showPassword}
-      autoCapitalize="none"
-    />
-    <TouchableOpacity
-      onPress={() => setShowPassword(!showPassword)}
-      activeOpacity={0.7}
-    >
-      <Ionicons
-        name={showPassword ? 'eye-outline' : 'eye-off-outline'}
-        size={20}
-        color={Colors.text.secondary}
-      />
-    </TouchableOpacity>
-  </View>
-  {errors.password ? (
-    <Text style={styles.errorText}>{errors.password}</Text>
-  ) : null}
-</View>
-
+          {/* PASSWORD INPUT */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Password</Text>
+            <View style={[
+              styles.inputWrapper,
+              errors.password ? styles.inputWrapperError : null
+            ]}>
+              <Ionicons name="lock-closed-outline" size={20} color={Colors.text.secondary} />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your password"
+                placeholderTextColor={Colors.text.tertiary}
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setErrors({ ...errors, password: '' });
+                }}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-outline' : 'eye-off-outline'}
+                  size={20}
+                  color={Colors.text.secondary}
+                />
+              </TouchableOpacity>
+            </View>
+            {errors.password ? (
+              <Text style={styles.errorText}>{errors.password}</Text>
+            ) : null}
+          </View>
 
           {/* FORGOT PASSWORD */}
           <TouchableOpacity
@@ -191,12 +178,12 @@ const LoginScreen = () => {
 
           {/* LOGIN BUTTON */}
           <TouchableOpacity
-            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
             onPress={handleLogin}
-            disabled={isLoading}
+            disabled={loading}
             activeOpacity={0.8}
           >
-            {isLoading ? (
+            {loading ? (
               <ActivityIndicator size="small" color="#000" />
             ) : (
               <>
@@ -406,7 +393,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
 
-    // SOCIAL LOGIN
+  // SOCIAL LOGIN
   socialContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -456,6 +443,5 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
 });
-
 
 export default LoginScreen;

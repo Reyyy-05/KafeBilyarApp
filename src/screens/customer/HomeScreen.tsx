@@ -1,4 +1,4 @@
-// src/screens/customer/HomeScreen.tsx
+// src/screens/customer/HomeScreen.tsx - FIXED PROFESSIONAL VERSION
 import React, { useRef, useState } from 'react';
 import { 
   View, 
@@ -201,43 +201,37 @@ const HomeScreen = () => {
           />
         }
       >
-        {/* 🎯 QUICK ACTIONS */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View>
-              <Text style={styles.sectionTitle}>Quick Access</Text>
-              <View style={styles.titleUnderline} />
-            </View>
-          </View>
-          
-          <View style={styles.quickActionsGrid}>
-            {quickActions.map((action, index) => (
-              <TouchableOpacity
-                key={action.screen}
-                style={[
-                  styles.quickActionCard,
-                  index === 0 && styles.quickActionCardPrimary
-                ]}
-                onPress={() => handleQuickAction(action.screen)}
-                activeOpacity={0.8}
-              >
-                {index === 0 && <View style={styles.cardGlow} />}
-                <View style={[
-                  styles.actionIconContainer,
-                  index === 0 ? styles.actionIconPrimary : styles.actionIconSecondary
-                ]}>
-                  <Ionicons 
-                    name={action.icon as any} 
-                    size={24} 
-                    color={index === 0 ? '#000' : COLORS.orange.primary} 
-                  />
-                </View>
-                <Text style={styles.actionTitle}>{action.title}</Text>
-                <Text style={styles.actionDescription}>{action.description}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+       {/* 🎯 QUICK ACTIONS */}
+<View style={styles.section}>
+  <View style={styles.sectionHeader}>
+    <View>
+      <Text style={styles.sectionTitle}>Quick Access</Text>
+      <View style={styles.titleUnderline} />
+    </View>
+  </View>
+  
+  <View style={styles.quickActionsGrid}>
+    {quickActions.map((action) => (
+      <TouchableOpacity
+        key={action.screen}
+        style={styles.quickActionCard}
+        onPress={() => handleQuickAction(action.screen)}
+        activeOpacity={0.8}
+      >
+        <View style={styles.actionIconContainer}>
+          <Ionicons 
+            name={action.icon as any} 
+            size={24} 
+            color={COLORS.orange.primary}
+          />
         </View>
+        <Text style={styles.actionTitle}>{action.title}</Text>
+        <Text style={styles.actionDescription}>{action.description}</Text>
+      </TouchableOpacity>
+    ))}
+  </View>
+</View>
+
 
         {/* 🎱 FEATURED TABLES */}
         <View style={styles.section}>
@@ -556,63 +550,45 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
-  // QUICK ACTIONS
-  quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  quickActionCard: {
-    width: (SCREEN_WIDTH - 52) / 2,
-    backgroundColor: COLORS.bg.secondary,
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.bg.tertiary,
-  },
-  quickActionCardPrimary: {
-    backgroundColor: COLORS.bg.tertiary,
-    borderColor: COLORS.orange.primary,
-    borderWidth: 1,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  cardGlow: {
-    position: 'absolute',
-    top: -50,
-    left: -50,
-    width: 100,
-    height: 100,
-    backgroundColor: COLORS.orange.glow,
-    borderRadius: 50,
-  },
-  actionIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  actionIconPrimary: {
-    backgroundColor: COLORS.orange.primary,
-  },
-  actionIconSecondary: {
-    backgroundColor: COLORS.bg.elevated,
-  },
-  actionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text.primary,
-    marginBottom: 4,
-  },
-  actionDescription: {
-    fontSize: 12,
-    color: COLORS.text.secondary,
-    textAlign: 'center',
-  },
+  // ✅ QUICK ACTIONS - FIXED
+  // ✅ QUICK ACTIONS - ALL EQUAL
+quickActionsGrid: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  justifyContent: 'space-between',
+},
+quickActionCard: {
+  width: (SCREEN_WIDTH - 52) / 2,
+  backgroundColor: COLORS.bg.secondary, // ✅ SEMUA sama
+  borderRadius: 20,
+  padding: 20,
+  marginBottom: 12,
+  alignItems: 'center',
+  borderWidth: 1.5,
+  borderColor: COLORS.orange.primary,
+},
+actionIconContainer: {
+  width: 56,
+  height: 56,
+  borderRadius: 28,
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginBottom: 12,
+  backgroundColor: COLORS.bg.elevated, // ✅ SEMUA sama
+  borderWidth: 2,
+  borderColor: COLORS.orange.primary,
+},
+actionTitle: {
+  fontSize: 16,
+  fontWeight: '700',
+  color: COLORS.text.primary,
+  marginBottom: 4,
+},
+actionDescription: {
+  fontSize: 12,
+  color: COLORS.text.secondary,
+  textAlign: 'center',
+},
 
   // TABLE CARDS
   tablesContainer: {

@@ -1,4 +1,4 @@
-// src/screens/customer/ProfileScreen.tsx
+// src/screens/customer/ProfileScreen.tsx - FIXED
 import React from 'react';
 import {
   View,
@@ -6,14 +6,14 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../../store';
 import { logout } from '../../store/slices/authSlice';
-import { Colors, Typography, Spacing, BorderRadius } from '../../theme';
+import { RootState } from '../../store';
+import { Colors, Typography, BorderRadius } from '../../theme';
 
 const ProfileScreen = () => {
   const navigation = useNavigation<any>();
@@ -21,11 +21,24 @@ const ProfileScreen = () => {
   const { user } = useSelector((state: RootState) => state.auth);
 
   const handleLogout = () => {
-    dispatch(logout());
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Auth' }],
-    });
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: () => {
+            // ✅ Dispatch Redux logout - navigation auto-handled by AppNavigator
+            dispatch(logout());
+          },
+        },
+      ]
+    );
   };
 
   const menuItems = [
@@ -40,7 +53,7 @@ const ProfileScreen = () => {
       icon: 'calendar-outline',
       title: 'Riwayat Booking',
       subtitle: 'Lihat semua booking Anda',
-      onPress: () => navigation.navigate('History'),
+      onPress: () => navigation.navigate('BookingHistory'),
       color: Colors.status.info,
     },
     {
@@ -100,7 +113,7 @@ const ProfileScreen = () => {
         {/* STATS CARDS */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <View style={[styles.statIcon, { backgroundColor: Colors.orange.subtle }]}>
+            <View style={[styles.statIcon, { backgroundColor: 'rgba(255, 107, 53, 0.1)' }]}>
               <Ionicons name="calendar" size={24} color={Colors.orange.primary} />
             </View>
             <Text style={styles.statNumber}>12</Text>

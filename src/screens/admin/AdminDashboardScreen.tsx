@@ -55,135 +55,137 @@ const AdminDashboardScreen = () => {
   ];
 
   return (
-    <View style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <View style={styles.headerGlow} />
-        <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.greeting}>Welcome back,</Text>
-            <Text style={styles.adminName}>{admin?.name || 'Admin'} 👨‍💼</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={handleLogout}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="log-out-outline" size={24} color={Colors.status.error} />
-          </TouchableOpacity>
+  <View style={styles.container}>
+    {/* HEADER */}
+    <View style={styles.header} pointerEvents="box-none">
+      <View style={styles.headerGlow} pointerEvents="none" />
+      <View style={styles.headerTop} pointerEvents="box-none">
+        <View pointerEvents="box-none">
+          <Text style={styles.greeting}>Welcome back,</Text>
+          <Text style={styles.adminName}>{admin?.name || 'Admin'} 👨‍💼</Text>
         </View>
-        <View style={styles.headerBadge}>
-          <Ionicons name="shield-checkmark" size={16} color={Colors.orange.primary} />
-          <Text style={styles.headerRole}>{admin?.role === 'super_admin' ? 'Super Admin' : 'Admin'}</Text>
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={handleLogout}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="log-out-outline" size={24} color={Colors.status.error} />
+        </TouchableOpacity>
+      </View>
+      <View style={styles.headerBadge} pointerEvents="none">
+        <Ionicons name="shield-checkmark" size={16} color={Colors.orange.primary} />
+        <Text style={styles.headerRole}>{admin?.role === 'super_admin' ? 'Super Admin' : 'Admin'}</Text>
+      </View>
+    </View>
+
+    <ScrollView
+      style={styles.scrollView}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={Colors.orange.primary}
+        />
+      }
+    >
+      {/* STATS GRID */}
+      <View style={styles.statsContainer}>
+        <Text style={styles.sectionTitle}>Today's Overview</Text>
+        
+        <View style={styles.statsGrid}>
+          {/* Stat Card 1 */}
+          <View style={[styles.statCard, styles.statCardPrimary]}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="calendar" size={24} color={Colors.orange.primary} />
+            </View>
+            <Text style={styles.statValue}>{stats.todayBookings}</Text>
+            <Text style={styles.statLabel}>Bookings Today</Text>
+          </View>
+
+          {/* Stat Card 2 */}
+          <View style={[styles.statCard, styles.statCardSuccess]}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="cash" size={24} color={Colors.status.success} />
+            </View>
+            <Text style={styles.statValue}>
+              {(stats.todayRevenue / 1000).toFixed(0)}K
+            </Text>
+            <Text style={styles.statLabel}>Revenue Today</Text>
+          </View>
+
+          {/* Stat Card 3 */}
+          <View style={[styles.statCard, styles.statCardInfo]}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="cafe" size={24} color={Colors.status.info} />
+            </View>
+            <Text style={styles.statValue}>{stats.activeTables}/{stats.totalTables}</Text>
+            <Text style={styles.statLabel}>Active Tables</Text>
+          </View>
+
+          {/* Stat Card 4 */}
+          <View style={[styles.statCard, styles.statCardWarning]}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="time" size={24} color={Colors.status.warning} />
+            </View>
+            <Text style={styles.statValue}>{stats.pendingOrders}</Text>
+            <Text style={styles.statLabel}>Pending Orders</Text>
+          </View>
         </View>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={Colors.orange.primary}
-          />
-        }
-      >
-        {/* STATS GRID */}
-        <View style={styles.statsContainer}>
-          <Text style={styles.sectionTitle}>Today's Overview</Text>
-          
-          <View style={styles.statsGrid}>
-            {/* Stat Card 1 */}
-            <View style={[styles.statCard, styles.statCardPrimary]}>
-              <View style={styles.statIconContainer}>
-                <Ionicons name="calendar" size={24} color={Colors.orange.primary} />
+      {/* QUICK ACTIONS */}
+      <View style={styles.quickActionsContainer}>
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        
+        <View style={styles.actionsGrid}>
+          {quickActions.map(action => (
+            <TouchableOpacity
+              key={action.id}
+              style={styles.actionCard}
+              onPress={() => {
+                console.log('Navigating to:', action.screen);
+                navigation.navigate(action.screen);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: `${action.color}20` }]}>
+                <Ionicons name={action.icon as any} size={28} color={action.color} />
               </View>
-              <Text style={styles.statValue}>{stats.todayBookings}</Text>
-              <Text style={styles.statLabel}>Bookings Today</Text>
-            </View>
-
-            {/* Stat Card 2 */}
-            <View style={[styles.statCard, styles.statCardSuccess]}>
-              <View style={styles.statIconContainer}>
-                <Ionicons name="cash" size={24} color={Colors.status.success} />
-              </View>
-              <Text style={styles.statValue}>
-                {(stats.todayRevenue / 1000).toFixed(0)}K
-              </Text>
-              <Text style={styles.statLabel}>Revenue Today</Text>
-            </View>
-
-            {/* Stat Card 3 */}
-            <View style={[styles.statCard, styles.statCardInfo]}>
-              <View style={styles.statIconContainer}>
-                <Ionicons name="cafe" size={24} color={Colors.status.info} />
-              </View>
-              <Text style={styles.statValue}>{stats.activeTables}/{stats.totalTables}</Text>
-              <Text style={styles.statLabel}>Active Tables</Text>
-            </View>
-
-            {/* Stat Card 4 */}
-            <View style={[styles.statCard, styles.statCardWarning]}>
-              <View style={styles.statIconContainer}>
-                <Ionicons name="time" size={24} color={Colors.status.warning} />
-              </View>
-              <Text style={styles.statValue}>{stats.pendingOrders}</Text>
-              <Text style={styles.statLabel}>Pending Orders</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* QUICK ACTIONS */}
-        <View style={styles.quickActionsContainer}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          
-          <View style={styles.actionsGrid}>
-            {quickActions.map(action => (
-              <TouchableOpacity
-                key={action.id}
-                style={styles.actionCard}
-                onPress={() => {
-                  console.log('Navigating to:', action.screen); // ✅ ADD DEBUG
-                  navigation.navigate(action.screen);
-                }}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.actionIcon, { backgroundColor: `${action.color}20` }]}>
-                  <Ionicons name={action.icon as any} size={28} color={action.color} />
-                </View>
-                <Text style={styles.actionLabel}>{action.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* RECENT ACTIVITY */}
-        <View style={styles.activityContainer}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>See All</Text>
+              <Text style={styles.actionLabel}>{action.label}</Text>
             </TouchableOpacity>
-          </View>
-
-          {[1, 2, 3, 4].map(i => (
-            <View key={i} style={styles.activityItem}>
-              <View style={styles.activityIcon}>
-                <Ionicons name="checkmark-circle" size={20} color={Colors.status.success} />
-              </View>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityTitle}>Booking #BK00{123 + i} confirmed</Text>
-                <Text style={styles.activityTime}>{i * 5} minutes ago</Text>
-              </View>
-            </View>
           ))}
         </View>
+      </View>
 
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </View>
-  );
+      {/* RECENT ACTIVITY */}
+      <View style={styles.activityContainer}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <TouchableOpacity>
+            <Text style={styles.seeAllText}>See All</Text>
+          </TouchableOpacity>
+        </View>
+
+        {[1, 2, 3, 4].map(i => (
+          <View key={i} style={styles.activityItem}>
+            <View style={styles.activityIcon}>
+              <Ionicons name="checkmark-circle" size={20} color={Colors.status.success} />
+            </View>
+            <View style={styles.activityContent}>
+              <Text style={styles.activityTitle}>Booking #BK00{123 + i} confirmed</Text>
+              <Text style={styles.activityTime}>{i * 5} minutes ago</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+
+      <View style={{ height: 40 }} />
+    </ScrollView>
+  </View>
+);
+
 };
 
 const styles = StyleSheet.create({
@@ -194,7 +196,9 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-
+  scrollContent: {
+    flexGrow: 1, // ✅ TAMBAHKAN INI
+  },
   // HEADER - ✅ FIXED WITH ZINDEX
   header: {
     backgroundColor: Colors.bg.secondary,
@@ -203,19 +207,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     position: 'relative',
     overflow: 'hidden',
-    zIndex: 1,
   },
   headerGlow: {
-    position: 'absolute',
-    top: -80,
-    right: -80,
-    width: 160,
-    height: 160,
-    backgroundColor: Colors.orange.glow,
-    borderRadius: 80,
-    opacity: 0.3,
-    zIndex: -1,
-  },
+  position: 'absolute',
+  top: -80,
+  right: -80,
+  width: 160,
+  height: 160,
+  backgroundColor: Colors.orange.glow,
+  borderRadius: 80,
+  opacity: 0.3,
+  zIndex: -1,
+  // ✅ pointerEvents="none" ditambahkan di component
+},
+
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
